@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Request Pickup{% endblock %}
+
+{% block content %}
+<div class="container py-4 fade-in" style="max-width:800px">
+
+  <div class="page-header mb-4">
+    <h1 class="h3 mb-1"><i class="bi bi-truck me-2"></i>Request Waste Pickup</h1>
+    <p class="mb-0">Schedule a pickup and our team will collect your waste on time.</p>
+  </div>
+
+  <div class="form-card">
+    <form method="post" id="pickupForm">
+      {% csrf_token %}
+
+      <div class="row g-3">
+
+        <div class="col-md-6">
+          <label class="form-label"><i class="bi bi-recycle text-success me-1"></i>Waste Type *</label>
+          {{ form.waste_type }}
+          {% if form.waste_type.errors %}<div class="text-danger small">{{ form.waste_type.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label"><i class="bi bi-calendar text-success me-1"></i>Preferred Date *</label>
+          {{ form.preferred_date }}
+          {% if form.preferred_date.errors %}<div class="text-danger small">{{ form.preferred_date.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label"><i class="bi bi-clock text-success me-1"></i>Preferred Time *</label>
+          {{ form.preferred_time }}
+          {% if form.preferred_time.errors %}<div class="text-danger small">{{ form.preferred_time.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label"><i class="bi bi-geo-alt text-success me-1"></i>Pickup Address *</label>
+          {{ form.address }}
+          {% if form.address.errors %}<div class="text-danger small">{{ form.address.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Additional Notes</label>
+          {{ form.description }}
+        </div>
+
+        <!-- Hidden fields -->
+        {{ form.latitude }}
+        {{ form.longitude }}
+
+        <!-- Waste Type Info Cards -->
+        <div class="col-12">
+          <label class="form-label"><i class="bi bi-info-circle text-success me-1"></i>Waste Type Guide</label>
+          <div class="row g-2">
+            <div class="col-6 col-md-4">
+              <div class="p-2 rounded text-center" style="background:#e8f5e9;border:1px solid #a8e6cf">
+                <div>♻️</div><small class="fw-600">Recyclable</small>
+                <div style="font-size:0.7rem;color:#666">Paper, Plastic, Metal</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="p-2 rounded text-center" style="background:#fff3e0;border:1px solid #ffe0b2">
+                <div>🍃</div><small class="fw-600">Organic</small>
+                <div style="font-size:0.7rem;color:#666">Food & Garden Waste</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="p-2 rounded text-center" style="background:#fce4ec;border:1px solid #ffcdd2">
+                <div>⚠️</div><small class="fw-600">Hazardous</small>
+                <div style="font-size:0.7rem;color:#666">Batteries, Chemicals</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <hr class="my-4">
+
+      <div class="d-flex gap-3">
+        <button type="submit" class="btn btn-eco btn-lg px-5">
+          <i class="bi bi-calendar-check me-2"></i>Schedule Pickup
+        </button>
+        <a href="{% url 'user_dashboard' %}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Set minimum date to today
+document.addEventListener('DOMContentLoaded', function() {
+  const dateInput = document.querySelector('input[type="date"]');
+  if (dateInput) {
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,238 @@
+{% extends "collector_app/base_collector.html" %}
+{% block title %}Task Detail{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+  <a href="{% url 'my_tasks' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back to Tasks
+  </a>
+</div>
+
+<div class="row g-4">
+
+  <!-- Task Details -->
+  <div class="col-lg-7">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+          <i class="bi bi-{% if task_type == 'pickup' %}truck{% else %}exclamation-triangle{% endif %} text-success me-2"></i>
+          {% if task_type == 'pickup' %}Pickup Request{% else %}Complaint{% endif %} #{{ task.pk }}
+        </span>
+        <span class="badge status-{{ task.status }} fs-6">{{ task.get_status_display }}</span>
+      </div>
+      <div class="card-body">
+
+        {% if task_type == 'complaint' %}
+        <!-- Complaint details -->
+        <div class="mb-2">
+          <span class="badge bg-light text-dark">{{ task.get_issue_type_display }}</span>
+        </div>
+        <h5 class="fw-700 mb-2">{{ task.title }}</h5>
+        <p class="text-muted">{{ task.description }}</p>
+
+        {% if task.photo %}
+        <div class="mb-3">
+          <label class="form-label fw-600 text-muted small">REPORTED PHOTO</label>
+          <img src="{{ task.photo.url }}" alt="Issue photo"
+               class="img-fluid rounded shadow-sm" style="max-height:260px;width:100%;object-fit:cover">
+        </div>
+        {% endif %}
+
+        {% if task.location_address %}
+        <div class="p-3 rounded mb-3" style="background:var(--light-2)">
+          <i class="bi bi-geo-alt text-success me-2"></i>
+          <strong>{{ task.location_address }}</strong>
+        </div>
+        {% endif %}
+
+        {% if task.latitude and task.longitude %}
+        <div class="mb-3">
+          <label class="form-label fw-600 text-muted small"><i class="bi bi-map text-success me-1"></i>LOCATION ON MAP</label>
+          <div id="task-map" style="height:220px;border-radius:10px;border:1px solid #e2e8f0"></div>
+          <div class="mt-2 d-flex justify-content-between align-items-center">
+            <small class="text-muted"><i class="bi bi-crosshair"></i> {{ task.latitude }}, {{ task.longitude }}</small>
+            <a href="https://www.google.com/maps/dir/?api=1&destination={{ task.latitude }},{{ task.longitude }}" target="_blank" class="btn btn-sm btn-outline-success">
+              <i class="bi bi-arrow-up-right-circle me-1"></i>Open Google Maps Navigation
+            </a>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if task.admin_notes %}
+        <div class="p-3 rounded mb-3" style="background:#e8f4fd;border-left:4px solid #3498db">
+          <i class="bi bi-chat-dots text-primary me-2"></i>
+          <strong>Municipal Admin Instructions:</strong> {{ task.admin_notes }}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Pickup details -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <small class="text-muted fw-600">WASTE TYPE</small>
+            <div class="fw-700 mt-1">{{ task.get_waste_type_display }}</div>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted fw-600">SCHEDULED DATE</small>
+            <div class="fw-700 mt-1">{{ task.preferred_date|date:"d M Y" }} at {{ task.preferred_time|time:"g:i A" }}</div>
+          </div>
+          <div class="col-12">
+            <small class="text-muted fw-600">PICKUP ADDRESS</small>
+            <div class="p-2 rounded mt-1" style="background:var(--light-2)">
+              <i class="bi bi-geo-alt text-success me-1"></i>{{ task.address }}
+            </div>
+          </div>
+          {% if task.latitude and task.longitude %}
+          <div class="col-12">
+            <div id="task-map" style="height:220px;border-radius:10px;border:1px solid #e2e8f0"></div>
+            <div class="mt-2 d-flex justify-content-between align-items-center">
+              <small class="text-muted"><i class="bi bi-crosshair"></i> {{ task.latitude }}, {{ task.longitude }}</small>
+              <a href="https://www.google.com/maps/dir/?api=1&destination={{ task.latitude }},{{ task.longitude }}" target="_blank" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-arrow-up-right-circle me-1"></i>Open Google Maps Navigation
+              </a>
+            </div>
+          </div>
+          {% endif %}
+          {% if task.description %}
+          <div class="col-12">
+            <small class="text-muted fw-600">NOTES</small>
+            <p class="text-muted mt-1">{{ task.description }}</p>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Citizen info -->
+        <div class="mt-3 pt-3 border-top">
+          <small class="text-muted fw-600">CITIZEN CONTACT</small>
+          <div class="d-flex align-items-center gap-2 mt-1">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2ecc71,#3498db);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.85rem">
+              {% if task_type == 'pickup' %}{{ task.requested_by.username|first|upper }}{% else %}{{ task.reported_by.username|first|upper }}{% endif %}
+            </div>
+            <div>
+              <div class="fw-600" style="font-size:0.875rem">
+                {% if task_type == 'pickup' %}
+                  {{ task.requested_by.get_full_name|default:task.requested_by.username }}
+                {% else %}
+                  {{ task.reported_by.get_full_name|default:task.reported_by.username }}
+                {% endif %}
+              </div>
+              <small class="text-muted">
+                {% if task_type == 'pickup' %}📞 {{ task.requested_by.phone|default:"No phone provided" }}
+                {% else %}📞 {{ task.reported_by.phone|default:"No phone provided" }}{% endif %}
+              </small>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Proof Photos Uploaded -->
+    {% if proofs %}
+    <div class="card">
+      <div class="card-header"><i class="bi bi-camera text-success me-2"></i>Collection Proofs Uploaded</div>
+      <div class="card-body">
+        {% for proof in proofs %}
+        <div class="mb-3 p-3 rounded" style="background:var(--light-2)">
+          <div class="d-flex justify-content-between mb-2">
+            <strong>Proof #{{ forloop.counter }}</strong>
+            <small class="text-muted">{{ proof.created_at|date:"d M Y, g:i A" }}</small>
+          </div>
+          {% if proof.photo %}
+          <img src="{{ proof.photo.url }}" alt="Proof" class="img-fluid rounded mb-2 shadow-sm"
+               style="max-height:220px;width:100%;object-fit:cover">
+          {% endif %}
+          {% if proof.notes %}<p class="small text-muted mb-0"><strong>Notes:</strong> {{ proof.notes }}</p>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Action Forms -->
+  <div class="col-lg-5">
+
+    <!-- Update Status -->
+    {% if task.status not in 'resolved,completed,cancelled,rejected' %}
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-arrow-up-circle text-success me-2"></i>Update Task Status</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-600">Select Status</label>
+            {{ form.status }}
+          </div>
+          <div class="d-grid">
+            <button type="submit" name="update_status" class="btn btn-eco">
+              <i class="bi bi-check-circle me-2"></i>Update Status
+            </button>
+          </div>
+        </form>
+
+        <!-- Status guide -->
+        <div class="mt-3 p-3 rounded" style="background:var(--gray-light)">
+          <div class="text-muted small fw-600 mb-1">QUICK GUIDE</div>
+          <div class="d-flex flex-column gap-1" style="font-size:0.8rem">
+            <div>📋 <strong>In Progress:</strong> On the way / cleaning in progress</div>
+            <div>✅ <strong>Resolved:</strong> Waste cleared & collected</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Upload Proof -->
+    {% if task.status not in 'resolved,completed' %}
+    <div class="card">
+      <div class="card-header"><i class="bi bi-camera text-success me-2"></i>Upload Collection Proof Photo</div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-600">Proof Photo *</label>
+            {{ proof_form.photo }}
+            <small class="text-muted d-block mt-1">Take or upload a clean photo of the cleared area</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-600">Proof Notes</label>
+            {{ proof_form.notes }}
+          </div>
+          <div class="d-grid">
+            <button type="submit" name="upload_proof" class="btn btn-success btn-lg">
+              <i class="bi bi-upload me-2"></i>Upload Proof & Mark Resolved
+            </button>
+          </div>
+          <small class="text-muted d-block mt-2 text-center">
+            This will mark the task as completed and notify the municipality.
+          </small>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="card-body text-center py-4">
+        <div style="font-size:3.5rem">🎉</div>
+        <h5 class="mt-2 text-success fw-700">Task Completed!</h5>
+        <p class="text-muted mb-3">This task has been resolved and verified.</p>
+        <a href="{% url 'my_tasks' %}" class="btn btn-eco">← Back to All Tasks</a>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if task.latitude and task.longitude %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  initSingleLocationMap('task-map', '{{ task.latitude }}', '{{ task.longitude }}', '{{ task.title|default:"Location"|escapejs }}', '{{ task.location_address|default:task.address|escapejs }}');
+});
+</script>
+{% endif %}
+{% endblock %}

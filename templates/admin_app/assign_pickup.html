@@ -1,0 +1,81 @@
+{% extends "admin_app/base_admin.html" %}
+{% block title %}Assign Pickup #{{ pickup.pk }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'all_pickups' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back to Pickups
+  </a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-truck text-success me-2"></i>Pickup Request #{{ pickup.pk }}</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <small class="text-muted fw-600">WASTE TYPE</small>
+            <div class="fw-700 mt-1">{{ pickup.get_waste_type_display }}</div>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted fw-600">STATUS</small>
+            <div class="mt-1">
+              <span class="badge status-{{ pickup.status }} fs-6">{{ pickup.get_status_display }}</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted fw-600">PREFERRED DATE</small>
+            <div class="fw-700 mt-1">{{ pickup.preferred_date|date:"d M Y" }}</div>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted fw-600">PREFERRED TIME</small>
+            <div class="fw-700 mt-1">{{ pickup.preferred_time|time:"g:i A" }}</div>
+          </div>
+          <div class="col-12">
+            <small class="text-muted fw-600">PICKUP ADDRESS</small>
+            <div class="mt-1 p-2 rounded" style="background:var(--light-2)">
+              <i class="bi bi-geo-alt text-success me-1"></i>{{ pickup.address }}
+            </div>
+          </div>
+          <div class="col-12">
+            <small class="text-muted fw-600">REQUESTED BY</small>
+            <div class="fw-600 mt-1">{{ pickup.requested_by.get_full_name|default:pickup.requested_by.username }}
+              ({{ pickup.requested_by.phone|default:"No phone" }})</div>
+          </div>
+          {% if pickup.description %}
+          <div class="col-12">
+            <small class="text-muted fw-600">NOTES</small>
+            <p class="text-muted mt-1">{{ pickup.description }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-check text-success me-2"></i>Assign & Update</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label">Assign to Collector</label>
+            {{ form.assigned_to }}
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Update Status</label>
+            {{ form.status }}
+          </div>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-eco btn-lg">
+              <i class="bi bi-check-circle me-2"></i>Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

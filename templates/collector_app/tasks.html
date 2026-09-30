@@ -1,0 +1,111 @@
+{% extends "collector_app/base_collector.html" %}
+{% block title %}My Tasks{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h1 class="h3 mb-1"><i class="bi bi-list-task me-2"></i>My Assigned Tasks</h1>
+  <p class="mb-0">All complaints and pickups assigned to you for collection.</p>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-4" id="taskTabs">
+  <li class="nav-item">
+    <button class="nav-link {% if task_type != 'pickup' %}active{% endif %}"
+            data-bs-toggle="tab" data-bs-target="#complaints-tab">
+      <i class="bi bi-exclamation-triangle me-1"></i>Complaints ({{ complaints.count }})
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link {% if task_type == 'pickup' %}active{% endif %}"
+            data-bs-toggle="tab" data-bs-target="#pickups-tab">
+      <i class="bi bi-truck me-1"></i>Pickup Requests ({{ pickups.count }})
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- Complaints Tab -->
+  <div class="tab-pane fade {% if task_type != 'pickup' %}show active{% endif %}" id="complaints-tab">
+    {% if complaints %}
+    <div class="row g-3">
+      {% for complaint in complaints %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100" style="border-left:4px solid
+          {% if complaint.status == 'in_progress' %}#3498db
+          {% elif complaint.status == 'resolved' %}#2ecc71
+          {% else %}#f39c12{% endif %}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="badge bg-light text-dark">{{ complaint.get_issue_type_display }}</span>
+              <span class="badge status-{{ complaint.status }}">{{ complaint.get_status_display }}</span>
+            </div>
+            <h6 class="fw-700 mb-1">{{ complaint.title|truncatechars:40 }}</h6>
+            <p class="text-muted small mb-2">{{ complaint.description|truncatechars:70 }}</p>
+            {% if complaint.location_address %}
+            <div class="text-muted small mb-2">
+              <i class="bi bi-geo-alt text-success me-1"></i>{{ complaint.location_address|truncatechars:45 }}
+            </div>
+            {% endif %}
+            <small class="text-muted d-block mb-2">
+              Reported by: {{ complaint.reported_by.get_full_name|default:complaint.reported_by.username }}
+            </small>
+            <a href="{% url 'task_detail_complaint' complaint.pk %}" class="btn btn-eco btn-sm w-100">
+              <i class="bi bi-arrow-right me-1"></i>Open Task
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <div style="font-size:4rem">🎉</div>
+      <h5 class="text-muted mt-3">No complaints assigned to you!</h5>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Pickups Tab -->
+  <div class="tab-pane fade {% if task_type == 'pickup' %}show active{% endif %}" id="pickups-tab">
+    {% if pickups %}
+    <div class="row g-3">
+      {% for pickup in pickups %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="badge" style="background:#e8f5e9;color:#27ae60">
+                {{ pickup.get_waste_type_display }}
+              </span>
+              <span class="badge status-{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+            </div>
+            <div class="mb-2">
+              <i class="bi bi-calendar text-success me-1"></i>
+              <strong>{{ pickup.preferred_date|date:"d M Y" }}</strong>
+              at <strong>{{ pickup.preferred_time|time:"g:i A" }}</strong>
+            </div>
+            <div class="text-muted small mb-2">
+              <i class="bi bi-geo-alt me-1"></i>{{ pickup.address|truncatechars:50 }}
+            </div>
+            <small class="text-muted d-block mb-2">
+              Requested by: {{ pickup.requested_by.get_full_name|default:pickup.requested_by.username }}
+            </small>
+            <a href="{% url 'task_detail_pickup' pickup.pk %}" class="btn btn-eco btn-sm w-100">
+              <i class="bi bi-arrow-right me-1"></i>Open Task
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <div style="font-size:4rem">🚛</div>
+      <h5 class="text-muted mt-3">No pickup requests assigned!</h5>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

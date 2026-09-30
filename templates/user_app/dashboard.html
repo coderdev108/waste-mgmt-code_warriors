@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4 fade-in">
+
+  <!-- Welcome Header -->
+  <div class="page-header mb-4">
+    <div class="row align-items-center">
+      <div class="col">
+        <h1 class="h3 mb-1">
+          👋 Hello, {{ request.user.get_full_name|default:request.user.username }}!
+        </h1>
+        <p class="mb-0">Welcome to your EcoCity dashboard. Here's your waste management overview.</p>
+      </div>
+      <div class="col-auto">
+        <a href="{% url 'report_issue' %}" class="btn btn-eco me-2">
+          <i class="bi bi-plus-circle me-1"></i>Report Issue
+        </a>
+        <a href="{% url 'pickup_request' %}" class="btn btn-outline-light">
+          <i class="bi bi-truck me-1"></i>Request Pickup
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="row g-4 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-card-blue">
+        <div class="stat-icon">📋</div>
+        <div class="stat-value">{{ total_complaints }}</div>
+        <div class="stat-label">Total Complaints</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-card-orange">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-value">{{ pending_complaints }}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-card-teal">
+        <div class="stat-icon">🔄</div>
+        <div class="stat-value">{{ in_progress_complaints }}</div>
+        <div class="stat-label">In Progress</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card stat-card-green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">{{ resolved_complaints }}</div>
+        <div class="stat-label">Resolved</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Recent Complaints -->
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-list-check text-success me-2"></i>Recent Complaints</span>
+          <a href="{% url 'my_complaints' %}" class="btn btn-sm btn-outline-success">View All</a>
+        </div>
+        <div class="card-body p-0">
+          {% if recent_complaints %}
+          <div class="table-responsive">
+            <table class="table table-modern mb-0">
+              <thead>
+                <tr>
+                  <th>Issue</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for complaint in recent_complaints %}
+                <tr>
+                  <td>
+                    <strong class="d-block" style="font-size:0.9rem">{{ complaint.title|truncatechars:40 }}</strong>
+                    <small class="text-muted">{{ complaint.location_address|truncatechars:35|default:"No location" }}</small>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark">{{ complaint.get_issue_type_display }}</span>
+                  </td>
+                  <td>
+                    <span class="badge status-{{ complaint.status }}">
+                      {{ complaint.get_status_display }}
+                    </span>
+                  </td>
+                  <td>
+                    <small class="text-muted">{{ complaint.created_at|date:"d M Y" }}</small>
+                  </td>
+                  <td>
+                    <a href="{% url 'complaint_detail' complaint.pk %}"
+                       class="btn btn-sm btn-outline-success">View</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <div style="font-size:3rem">🗑️</div>
+            <p class="text-muted mt-2">No complaints yet. Report an issue to get started!</p>
+            <a href="{% url 'report_issue' %}" class="btn btn-eco">
+              <i class="bi bi-plus me-1"></i>Report First Issue
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions + Pickup Summary -->
+    <div class="col-lg-4">
+
+      <!-- Quick Actions -->
+      <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-lightning text-warning me-2"></i>Quick Actions</div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <a href="{% url 'report_issue' %}" class="btn btn-eco">
+              <i class="bi bi-exclamation-triangle me-2"></i>Report Waste Issue
+            </a>
+            <a href="{% url 'pickup_request' %}" class="btn btn-outline-primary">
+              <i class="bi bi-truck me-2"></i>Schedule Pickup
+            </a>
+            <a href="{% url 'my_complaints' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-clock-history me-2"></i>Track Status
+            </a>
+            <a href="{% url 'awareness' %}" class="btn btn-outline-success">
+              <i class="bi bi-lightbulb me-2"></i>Eco Tips
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pickup Requests Summary -->
+      <div class="card">
+        <div class="card-header"><i class="bi bi-truck text-primary me-2"></i>Pickup Requests</div>
+        <div class="card-body">
+          {% if recent_pickups %}
+            {% for pickup in recent_pickups %}
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded"
+                 style="background:var(--gray-light)">
+              <div>
+                <div class="fw-600" style="font-size:0.875rem">{{ pickup.get_waste_type_display }}</div>
+                <small class="text-muted">{{ pickup.preferred_date|date:"d M Y" }}</small>
+              </div>
+              <span class="badge status-{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted text-center mb-2" style="font-size:0.875rem">No pickup requests yet</p>
+            <a href="{% url 'pickup_request' %}" class="btn btn-sm btn-outline-primary w-100">
+              Schedule a Pickup
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

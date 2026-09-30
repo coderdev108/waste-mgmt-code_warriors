@@ -1,0 +1,111 @@
+{% extends "admin_app/base_admin.html" %}
+{% block title %}Assign Complaint #{{ complaint.pk }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="{% url 'all_complaints' %}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back to Complaints
+  </a>
+</div>
+
+<div class="row g-4">
+
+  <!-- Complaint Details -->
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-file-text text-success me-2"></i>Complaint #{{ complaint.pk }} Details
+      </div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-3">
+          <span class="badge bg-light text-dark fs-6">{{ complaint.get_issue_type_display }}</span>
+          <span class="badge status-{{ complaint.status }} fs-6">{{ complaint.get_status_display }}</span>
+        </div>
+
+        <h5 class="fw-700">{{ complaint.title }}</h5>
+        <p class="text-muted">{{ complaint.description }}</p>
+
+        {% if complaint.photo %}
+        <img src="{{ complaint.photo.url }}" alt="Issue" class="img-fluid rounded mb-3"
+             style="max-height:250px;width:100%;object-fit:cover">
+        {% endif %}
+
+        <div class="row g-2">
+          {% if complaint.location_address %}
+          <div class="col-12">
+            <div class="p-2 rounded" style="background:var(--light-2)">
+              <i class="bi bi-geo-alt text-success me-1"></i>
+              <strong>Location:</strong> {{ complaint.location_address }}
+            </div>
+          </div>
+          {% endif %}
+          <div class="col-md-6">
+            <small class="text-muted">Reported By</small>
+            <div class="fw-600">{{ complaint.reported_by.get_full_name|default:complaint.reported_by.username }}</div>
+            <small class="text-muted">{{ complaint.reported_by.phone|default:"No phone" }}</small>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted">Reported At</small>
+            <div class="fw-600">{{ complaint.created_at|date:"d M Y, g:i A" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignment Form -->
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-check text-success me-2"></i>Assign & Update</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label">Assign to Collector</label>
+            {{ form.assigned_to }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Update Status</label>
+            {{ form.status }}
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Admin Notes</label>
+            {{ form.admin_notes }}
+            <small class="text-muted">Notes visible to the citizen and collector</small>
+          </div>
+
+          <div class="d-grid">
+            <button type="submit" class="btn btn-eco btn-lg">
+              <i class="bi bi-check-circle me-2"></i>Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% if complaint.assigned_to %}
+    <div class="card mt-3">
+      <div class="card-header"><i class="bi bi-truck text-primary me-2"></i>Assigned Collector</div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#f39c12,#e67e22);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:white;font-weight:700">
+            {{ complaint.assigned_to.username|first|upper }}
+          </div>
+          <div>
+            <div class="fw-600">{{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.username }}</div>
+            <small class="text-muted">{{ complaint.assigned_to.phone|default:"No phone" }}</small>
+            {% if complaint.assigned_to.zone %}
+            <br><small class="badge bg-light text-dark">Zone: {{ complaint.assigned_to.zone }}</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

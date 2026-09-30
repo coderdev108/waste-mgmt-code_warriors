@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Eco Awareness Tips{% endblock %}
+
+{% block content %}
+<div class="container py-4 fade-in">
+
+  <div class="page-header mb-4" style="background:linear-gradient(135deg,#1a472a,#2d6a4f)">
+    <div class="text-center">
+      <div style="font-size:3rem mb-2">🌿</div>
+      <h1 class="h2 mb-2">♻️ Eco Awareness Center</h1>
+      <p class="mb-0" style="opacity:0.9">
+        Learn to reduce, reuse, and recycle. Every action counts for a cleaner tomorrow.
+      </p>
+    </div>
+  </div>
+
+  <!-- Category Filter -->
+  <div class="d-flex gap-2 mb-4 flex-wrap justify-content-center">
+    <span class="badge rounded-pill px-3 py-2" style="background:#2ecc71;color:white;cursor:pointer;font-size:0.85rem">
+      All Tips
+    </span>
+    <span class="badge rounded-pill px-3 py-2" style="background:var(--light-2);color:#27ae60;cursor:pointer;font-size:0.85rem;border:1px solid #a8e6cf">
+      ♻️ Recycling
+    </span>
+    <span class="badge rounded-pill px-3 py-2" style="background:#e8f4fd;color:#2980b9;cursor:pointer;font-size:0.85rem;border:1px solid #bee5fb">
+      📢 Announcements
+    </span>
+    <span class="badge rounded-pill px-3 py-2" style="background:#fef9e7;color:#856404;cursor:pointer;font-size:0.85rem;border:1px solid #ffe3a3">
+      🌱 Composting
+    </span>
+  </div>
+
+  {% if tips %}
+  <div class="row g-4">
+    {% for tip in tips %}
+    <div class="col-md-6 col-lg-4">
+      <div class="tip-card card h-100
+        {% if tip.category == 'announcement' %}border-top-color: #3498db{% endif %}">
+        <div class="card-body text-center p-4">
+          <span class="tip-icon">{{ tip.icon }}</span>
+          <div class="mb-2">
+            <span class="badge rounded-pill px-3"
+              style="background:
+                {% if tip.category == 'tip' %}#e8f5e9;color:#27ae60
+                {% elif tip.category == 'announcement' %}#e8f4fd;color:#2980b9
+                {% elif tip.category == 'recycling' %}#fef9e7;color:#856404
+                {% else %}#f3e5f5;color:#7b1fa2{% endif %}">
+              {{ tip.get_category_display }}
+            </span>
+          </div>
+          <h5 class="fw-700 mb-3">{{ tip.title }}</h5>
+          <p class="text-muted" style="font-size:0.9rem;line-height:1.7">{{ tip.content }}</p>
+          <div class="mt-3 pt-3 border-top">
+            <small class="text-muted">{{ tip.created_at|date:"d M Y" }}</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <!-- Default tips if no DB content -->
+  <div class="row g-4">
+    {% with default_tips="1,2,3,4,5,6" %}
+    <div class="col-md-6 col-lg-4">
+      <div class="tip-card card h-100">
+        <div class="card-body text-center p-4">
+          <span class="tip-icon">♻️</span>
+          <h5 class="fw-700 mb-3">Segregate Your Waste</h5>
+          <p class="text-muted" style="font-size:0.9rem;line-height:1.7">
+            Always separate dry waste (paper, plastic, metal) from wet waste (food scraps).
+            This makes recycling easier and reduces landfill burden.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <div class="tip-card card h-100">
+        <div class="card-body text-center p-4">
+          <span class="tip-icon">🌱</span>
+          <h5 class="fw-700 mb-3">Compost Kitchen Waste</h5>
+          <p class="text-muted" style="font-size:0.9rem;line-height:1.7">
+            Turn food scraps, vegetable peels, and coffee grounds into rich compost.
+            It reduces methane from landfills and creates natural fertilizer.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <div class="tip-card card h-100">
+        <div class="card-body text-center p-4">
+          <span class="tip-icon">🛍️</span>
+          <h5 class="fw-700 mb-3">Say No to Single-Use Plastic</h5>
+          <p class="text-muted" style="font-size:0.9rem;line-height:1.7">
+            Carry reusable bags, bottles, and containers. Single-use plastics
+            take 400+ years to decompose and harm marine life.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <div class="tip-card card h-100">
+        <div class="card-body text-center p-4">
+          <span class="tip-icon">📱</span>
+          <h5 class="fw-700 mb-3">Proper E-Waste Disposal</h5>
+          <p class="text-muted" style="font-size:0.9rem;line-height:1.7">
+            Never throw electronics in regular bins. Take them to authorized e-waste
+            collection centers to recover valuable metals safely.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <div class="tip-card card h-100">
+        <div class="card-body text-center p-4">
+          <span class="tip-icon">💧</span>
+          <h5 class="fw-700 mb-3">Reduce Water Waste</h5>
+          <p class="text-muted" style="font-size:0.9rem;line-height:1.7">
+            Fix leaking taps, take shorter showers, and collect rainwater.
+            Water conservation starts at home!
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-lg-4">
+      <div class="tip-card card h-100">
+        <div class="card-body text-center p-4">
+          <span class="tip-icon">🌍</span>
+          <h5 class="fw-700 mb-3">Community Clean-Up</h5>
+          <p class="text-muted" style="font-size:0.9rem;line-height:1.7">
+            Join local clean-up drives. Report waste hotspots using this app
+            so our collectors can address them quickly.
+          </p>
+        </div>
+      </div>
+    </div>
+    {% endwith %}
+  </div>
+  {% endif %}
+
+  <!-- CTA Banner -->
+  <div class="mt-5 p-4 rounded-3 text-center text-white"
+       style="background:linear-gradient(135deg,#1a472a,#2d6a4f)">
+    <h4 class="mb-2">🌍 Be the Change!</h4>
+    <p class="mb-3" style="opacity:0.9">Spotted a waste issue in your area? Report it now and help keep our city clean.</p>
+    <a href="{% url 'report_issue' %}" class="btn btn-eco px-4">
+      <i class="bi bi-plus-circle me-2"></i>Report an Issue
+    </a>
+  </div>
+
+</div>
+{% endblock %}

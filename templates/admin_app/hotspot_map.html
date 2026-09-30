@@ -1,0 +1,68 @@
+{% extends "admin_app/base_admin.html" %}
+{% block title %}Waste Hotspot Map{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h1 class="h3 mb-1"><i class="bi bi-map me-2"></i>Waste Hotspot Map</h1>
+  <p class="mb-0">Geographic overview of all reported waste issues. Click markers for details and direct assignment.</p>
+</div>
+
+<!-- Legend -->
+<div class="card mb-4">
+  <div class="card-body py-2">
+    <div class="d-flex gap-4 flex-wrap align-items-center justify-content-between">
+      <div class="d-flex gap-4 flex-wrap align-items-center">
+        <span class="fw-600 text-muted small">LEGEND:</span>
+        <span class="d-flex align-items-center gap-2">
+          <span style="width:14px;height:14px;border-radius:50%;background:#f39c12;display:inline-block"></span>
+          <small>Pending</small>
+        </span>
+        <span class="d-flex align-items-center gap-2">
+          <span style="width:14px;height:14px;border-radius:50%;background:#3498db;display:inline-block"></span>
+          <small>In Progress</small>
+        </span>
+        <span class="d-flex align-items-center gap-2">
+          <span style="width:14px;height:14px;border-radius:50%;background:#2ecc71;display:inline-block"></span>
+          <small>Resolved</small>
+        </span>
+        <span class="d-flex align-items-center gap-2">
+          <span style="width:14px;height:14px;border-radius:50%;background:#e74c3c;display:inline-block"></span>
+          <small>Rejected</small>
+        </span>
+      </div>
+      <div>
+        <a href="{% url 'all_complaints' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-list-task me-1"></i>List View
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div id="hotspot-map" style="height:580px;width:100%;border-radius:var(--radius)"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function renderHotspotMap() {
+  try {
+    const mapData = {{ map_data|safe }};
+    if (typeof initHotspotMap === 'function') {
+      initHotspotMap(mapData);
+    }
+  } catch(e) {
+    console.error('Hotspot map init error:', e);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderHotspotMap);
+} else {
+  renderHotspotMap();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}My Complaints{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-4 fade-in">
+
+  <div class="page-header mb-4">
+    <div class="row align-items-center">
+      <div class="col">
+        <h1 class="h3 mb-1"><i class="bi bi-list-check me-2"></i>My Complaints & Pickups</h1>
+        <p class="mb-0">Track the status of all your reported issues and pickup requests.</p>
+      </div>
+      <div class="col-auto">
+        <a href="{% url 'report_issue' %}" class="btn btn-eco me-2">
+          <i class="bi bi-plus me-1"></i>New Report
+        </a>
+        <a href="{% url 'pickup_request' %}" class="btn btn-outline-light">
+          <i class="bi bi-truck me-1"></i>Request Pickup
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="card mb-4">
+    <div class="card-body py-2">
+      <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+        <label class="text-muted small fw-600">Filter by Status:</label>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="{% url 'my_complaints' %}"
+             class="btn btn-sm {% if not status_filter %}btn-success{% else %}btn-outline-secondary{% endif %}">
+            All
+          </a>
+          <a href="?status=pending"
+             class="btn btn-sm {% if status_filter == 'pending' %}btn-warning text-dark{% else %}btn-outline-warning{% endif %}">
+            ⏳ Pending
+          </a>
+          <a href="?status=in_progress"
+             class="btn btn-sm {% if status_filter == 'in_progress' %}btn-info text-dark{% else %}btn-outline-info{% endif %}">
+            🔄 In Progress
+          </a>
+          <a href="?status=resolved"
+             class="btn btn-sm {% if status_filter == 'resolved' %}btn-success{% else %}btn-outline-success{% endif %}">
+            ✅ Resolved
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4" id="myTabs">
+    <li class="nav-item">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#complaints-tab">
+        <i class="bi bi-exclamation-triangle me-1"></i>Complaints ({{ complaints.count }})
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pickups-tab">
+        <i class="bi bi-truck me-1"></i>Pickup Requests ({{ pickups.count }})
+      </button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- Complaints Tab -->
+    <div class="tab-pane fade show active" id="complaints-tab">
+      {% if complaints %}
+      <div class="row g-3">
+        {% for complaint in complaints %}
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100" style="border-left:4px solid
+            {% if complaint.status == 'pending' %}#f39c12
+            {% elif complaint.status == 'in_progress' %}#3498db
+            {% elif complaint.status == 'resolved' %}#2ecc71
+            {% else %}#e74c3c{% endif %}">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <span class="badge bg-light text-dark">{{ complaint.get_issue_type_display }}</span>
+                <span class="badge status-{{ complaint.status }}">{{ complaint.get_status_display }}</span>
+              </div>
+
+              <!-- Incident grouping badge -->
+              {% if complaint.incident %}
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span style="background:linear-gradient(135deg,#ff6b35,#f7931e);color:white;border-radius:20px;padding:2px 10px;font-size:0.72rem;font-weight:700;">
+                  🔥 {{ complaint.incident.report_count }} reporter{{ complaint.incident.report_count|pluralize }} · Incident #{{ complaint.incident.pk }}
+                </span>
+                {% if complaint.incident.report_count >= 3 %}
+                <span style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b;border-radius:20px;padding:2px 8px;font-size:0.68rem;font-weight:700;">
+                  🚨 High Priority
+                </span>
+                {% endif %}
+              </div>
+              {% endif %}
+
+              <h6 class="fw-700 mb-1">{{ complaint.title|truncatechars:50 }}</h6>
+              <p class="text-muted small mb-2">{{ complaint.description|truncatechars:80 }}</p>
+
+              {% if complaint.location_address %}
+              <div class="text-muted small mb-2">
+                <i class="bi bi-geo-alt me-1 text-success"></i>{{ complaint.location_address|truncatechars:50 }}
+              </div>
+              {% endif %}
+
+              {% if complaint.photo %}
+              <img src="{{ complaint.photo.url }}" alt="Issue photo"
+                   class="img-fluid rounded mb-2" style="max-height:100px;width:100%;object-fit:cover">
+              {% endif %}
+
+              <div class="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
+                <small class="text-muted">{{ complaint.created_at|date:"d M Y" }}</small>
+                <a href="{% url 'complaint_detail' complaint.pk %}"
+                   class="btn btn-sm btn-outline-success">
+                  View Details <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-5">
+        <div style="font-size:4rem">🔍</div>
+        <h5 class="text-muted mt-3">No complaints found</h5>
+        <p class="text-muted">
+          {% if status_filter %}No {{ status_filter }} complaints.{% else %}You haven't reported any issues yet.{% endif %}
+        </p>
+        <a href="{% url 'report_issue' %}" class="btn btn-eco">Report an Issue</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Pickups Tab -->
+    <div class="tab-pane fade" id="pickups-tab">
+      {% if pickups %}
+      <div class="row g-3">
+        {% for pickup in pickups %}
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between mb-2">
+                <span class="badge" style="background:#e8f5e9;color:#27ae60">
+                  {{ pickup.get_waste_type_display }}
+                </span>
+                <span class="badge status-{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+              </div>
+              <div class="mb-2">
+                <i class="bi bi-calendar text-success me-1"></i>
+                <strong>{{ pickup.preferred_date|date:"d M Y" }}</strong>
+                at <strong>{{ pickup.preferred_time|time:"g:i A" }}</strong>
+              </div>
+              <div class="text-muted small">
+                <i class="bi bi-geo-alt me-1"></i>{{ pickup.address|truncatechars:60 }}
+              </div>
+              {% if pickup.description %}
+              <p class="text-muted small mt-2">{{ pickup.description|truncatechars:60 }}</p>
+              {% endif %}
+              <div class="mt-3 pt-2 border-top">
+                <small class="text-muted">Requested {{ pickup.created_at|date:"d M Y" }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-5">
+        <div style="font-size:4rem">🚛</div>
+        <h5 class="text-muted mt-3">No pickup requests yet</h5>
+        <a href="{% url 'pickup_request' %}" class="btn btn-eco">Schedule a Pickup</a>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

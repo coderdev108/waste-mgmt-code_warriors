@@ -1,0 +1,85 @@
+{% extends "admin_app/base_admin.html" %}
+{% block title %}Pickup Requests{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h1 class="h3 mb-1"><i class="bi bi-truck me-2"></i>Pickup Requests</h1>
+  <p class="mb-0">Manage and assign all scheduled waste pickup requests.</p>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex align-items-center gap-3 flex-wrap">
+      <label class="text-muted small fw-600">Filter:</label>
+      <select name="status" class="form-select auto-filter" style="width:auto">
+        <option value="">All Statuses</option>
+        {% for value, label in statuses %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">{{ pickups.count }} pickup request(s)</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-modern mb-0">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Waste Type</th>
+            <th>Citizen</th>
+            <th>Address</th>
+            <th>Date & Time</th>
+            <th>Assigned</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pickup in pickups %}
+          <tr>
+            <td><small class="text-muted">#{{ pickup.pk }}</small></td>
+            <td>
+              <span class="badge" style="background:#e8f5e9;color:#27ae60">
+                {{ pickup.get_waste_type_display }}
+              </span>
+            </td>
+            <td><small>{{ pickup.requested_by.username }}</small></td>
+            <td><small class="text-muted">{{ pickup.address|truncatechars:35 }}</small></td>
+            <td>
+              <strong style="font-size:0.875rem">{{ pickup.preferred_date|date:"d M Y" }}</strong>
+              <br><small class="text-muted">{{ pickup.preferred_time|time:"g:i A" }}</small>
+            </td>
+            <td>
+              {% if pickup.assigned_to %}
+              <span class="badge" style="background:#e8f5e9;color:#27ae60">
+                {{ pickup.assigned_to.username }}
+              </span>
+              {% else %}
+              <span class="text-muted small">Unassigned</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge status-{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+            </td>
+            <td>
+              <a href="{% url 'assign_pickup' pickup.pk %}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-pencil"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-4 text-muted">No pickup requests found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

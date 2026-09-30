@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found (404){% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center fade-in" style="max-width:600px">
+  <div style="font-size:5rem">🌱 404</div>
+  <h2 class="fw-700 mt-2 text-dark">Page Not Found</h2>
+  <p class="text-muted mt-2">The page you are looking for might have been moved, renamed, or does not exist.</p>
+  <div class="mt-4">
+    <a href="{% url 'role_redirect' %}" class="btn btn-eco btn-lg px-4">
+      <i class="bi bi-house-door me-2"></i>Back to Home
+    </a>
+  </div>
+</div>
+{% endblock %}

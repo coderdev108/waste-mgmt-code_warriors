@@ -1,0 +1,743 @@
+{% extends "base.html" %}
+{% block title %}Report Waste Issue{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Duplicate Detection Panel ──────────────────────────────── */
+#dupPanel {
+  display: none;
+  border-radius: 16px;
+  overflow: hidden;
+  animation: slideDown 0.4s cubic-bezier(.22,.68,0,1.2);
+  margin-bottom: 1.25rem;
+}
+@keyframes slideDown {
+  from { opacity:0; transform: translateY(-12px) scale(0.98); }
+  to   { opacity:1; transform: translateY(0)     scale(1); }
+}
+.dup-header {
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  color: white;
+  padding: 1rem 1.25rem;
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.dup-pulse {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: white; flex-shrink: 0;
+  animation: pulse 1.4s ease infinite;
+}
+@keyframes pulse {
+  0%,100%{ box-shadow: 0 0 0 0 rgba(255,255,255,0.6); }
+  50%     { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+}
+.dup-body { background: #fff8f5; padding: 1rem 1.25rem; border: 2px solid #ff6b3530; border-top: none; }
+
+/* Incident card */
+.incident-card {
+  background: linear-gradient(135deg, #fff3e0, #fff8f5);
+  border: 1.5px solid #ff9800;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.6rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  transition: transform 0.2s;
+}
+.incident-card:hover { transform: translateX(3px); }
+.incident-badge {
+  background: #ff6b35; color: white;
+  border-radius: 50%; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.9rem; flex-shrink: 0;
+}
+/* Individual complaint card */
+.comp-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.65rem 0.9rem;
+  margin-bottom: 0.4rem;
+  display: flex; align-items: center; gap: 0.6rem;
+  font-size: 0.82rem;
+}
+.comp-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #f59e0b; flex-shrink: 0;
+}
+
+/* Radius slider */
+.radius-slider { accent-color: #f97316; }
+
+/* Submit button state */
+.btn-warn-submit {
+  background: linear-gradient(135deg, #f97316, #ef4444) !important;
+  border: none !important; color: white !important;
+}
+.btn-warn-submit:hover { filter: brightness(1.08); }
+
+/* High-priority badge on submit */
+.priority-flag {
+  display: none;
+  background: #fef3c7; border: 1.5px solid #f59e0b;
+  border-radius: 8px; padding: 0.5rem 0.85rem;
+  font-size: 0.82rem; color: #92400e;
+  margin-bottom: 0.75rem;
+}
+.priority-flag.show { display: flex; align-items: center; gap: 0.5rem; }
+
+/* ── Image Detector Panel ───────────────────────────────────── */
+#imgWarnPanel {
+  display: none;
+  border-radius: 14px; overflow: hidden;
+  margin-top: 0.75rem;
+  animation: slideDown 0.35s ease;
+}
+.img-warn-header {
+  padding: 0.75rem 1rem;
+  display: flex; align-items: center; gap: 0.6rem;
+  color: white; font-weight: 700; font-size: 0.9rem;
+}
+.img-warn-header.danger  { background: linear-gradient(135deg,#ef4444,#dc2626); }
+.img-warn-header.warning { background: linear-gradient(135deg,#f59e0b,#d97706); }
+.img-warn-header.success { background: linear-gradient(135deg,#10b981,#059669); }
+.img-warn-body {
+  padding: 0.75rem 1rem; font-size: 0.82rem;
+  border: 2px solid; border-top: none; border-radius: 0 0 14px 14px;
+}
+.img-warn-body.danger  { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+.img-warn-body.warning { background:#fffbeb; border-color:#fde68a; color:#92400e; }
+.img-warn-body.success { background:#ecfdf5; border-color:#a7f3d0; color:#065f46; }
+/* Scanning ring on photo box */
+.photo-scanning::after {
+  content:'';
+  position:absolute; inset:-3px;
+  border-radius:10px;
+  border:3px solid transparent;
+  border-top-color:#3b82f6;
+  animation: spin 0.8s linear infinite;
+  pointer-events:none;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.photo-box { position:relative; display:inline-block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 fade-in" style="max-width:850px">
+
+  <div class="page-header mb-4">
+    <h1 class="h3 mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Report a Waste Issue</h1>
+    <p class="mb-0">Help keep our city clean and green. Your report will be assigned to a collector promptly.</p>
+  </div>
+
+  <!-- ══ DUPLICATE DETECTION PANEL (shown live) ══ -->
+  <div id="dupPanel">
+    <div class="dup-header">
+      <div class="dup-pulse"></div>
+      <div>
+        <div class="fw-700" style="font-size:1rem">⚠️ Similar Reports Already Exist Nearby!</div>
+        <div style="font-size:0.82rem;opacity:0.9" id="dupSubtitle">Loading…</div>
+      </div>
+      <button type="button" class="btn-close btn-close-white ms-auto" id="closeDupPanel" aria-label="Close"></button>
+    </div>
+    <div class="dup-body">
+
+      <!-- Grouped incidents -->
+      <div id="incidentsSection" style="display:none">
+        <div class="fw-700 small text-uppercase mb-2" style="color:#c2410c">
+          <i class="bi bi-diagram-3 me-1"></i>Active Common Incidents
+        </div>
+        <div id="incidentsList"></div>
+      </div>
+
+      <!-- Individual complaints -->
+      <div id="complaintsSection" style="display:none">
+        <div class="fw-700 small text-uppercase mb-2 mt-2" style="color:#92400e">
+          <i class="bi bi-person-fill me-1"></i>Nearby Individual Reports
+        </div>
+        <div id="complaintsList"></div>
+      </div>
+
+      <!-- Radius control -->
+      <div class="d-flex align-items-center gap-3 mt-3 pt-2" style="border-top:1px dashed #fdba74">
+        <span class="small text-muted" style="white-space:nowrap">Search radius:</span>
+        <input type="range" class="form-range radius-slider flex-grow-1"
+               id="radiusSlider" min="100" max="2000" step="100" value="500">
+        <span class="badge bg-warning text-dark fw-600" id="radiusLabel" style="min-width:60px">500 m</span>
+      </div>
+      <div class="small text-muted mt-1">
+        <i class="bi bi-info-circle me-1"></i>
+        Your complaint will be grouped with existing reports for <strong>faster priority resolution</strong>.
+      </div>
+    </div>
+  </div>
+  <!-- ══════════════════════════════════════════ -->
+
+  <div class="form-card">
+    <form method="post" enctype="multipart/form-data" id="reportForm">
+      {% csrf_token %}
+
+      <div class="row g-3">
+
+        <!-- Title -->
+        <div class="col-12">
+          <label class="form-label">
+            <i class="bi bi-type text-success me-1"></i>Issue Title *
+          </label>
+          {{ form.title }}
+          {% if form.title.errors %}<div class="text-danger small">{{ form.title.errors.0 }}</div>{% endif %}
+        </div>
+
+        <!-- Issue Type -->
+        <div class="col-md-6">
+          <label class="form-label">
+            <i class="bi bi-tags text-success me-1"></i>Issue Type *
+          </label>
+          {{ form.issue_type }}
+          {% if form.issue_type.errors %}<div class="text-danger small">{{ form.issue_type.errors.0 }}</div>{% endif %}
+        </div>
+
+        <!-- Photo Upload -->
+        <div class="col-md-6">
+          <label class="form-label">
+            <i class="bi bi-camera text-success me-1"></i>Upload Photo
+            <span class="badge ms-1" style="background:#3b82f6;font-size:0.65rem">🔍 AI Verified</span>
+          </label>
+          <div class="photo-box" id="photoBox">
+            {{ form.photo }}
+          </div>
+          <small class="text-muted d-block mt-1">Attach a real photo taken at the location</small>
+
+          <!-- Scanning indicator -->
+          <div id="imgScanningMsg" style="display:none;font-size:0.8rem;color:#3b82f6;margin-top:4px">
+            <span class="spinner-border spinner-border-sm me-1" style="width:12px;height:12px"></span>
+            Analysing image…
+          </div>
+
+          <!-- Warning panel -->
+          <div id="imgWarnPanel">
+            <div class="img-warn-header" id="imgWarnHeader">
+              <span id="imgWarnIcon">🚫</span>
+              <span id="imgWarnTitle">Duplicate Photo Detected</span>
+            </div>
+            <div class="img-warn-body" id="imgWarnBody">
+              <div id="imgWarnMsg"></div>
+              <div class="mt-2 d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-danger fw-600" id="removePhotoBtn">
+                  <i class="bi bi-trash me-1"></i>Remove & Upload New
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="ignoreWarnBtn" style="display:none">
+                  Proceed Anyway
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div id="photoPreviewWrap" style="display:none;margin-top:0.5rem">
+            <img id="photoPreview" src="" style="max-height:100px;border-radius:8px;border:1px solid #e2e8f0">
+          </div>
+        </div>
+
+
+        <!-- Description -->
+        <div class="col-12">
+          <label class="form-label">
+            <i class="bi bi-text-left text-success me-1"></i>Description *
+          </label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors.0 }}</div>{% endif %}
+        </div>
+
+        <!-- Location Address -->
+        <div class="col-12">
+          <label class="form-label">
+            <i class="bi bi-geo-alt text-success me-1"></i>Location Address
+          </label>
+          {{ form.location_address }}
+          <small class="text-muted d-block mt-1">
+            <i class="bi bi-info-circle me-1"></i>Type address or click on the map below to pin exact coordinates
+          </small>
+        </div>
+
+        <!-- Hidden lat/lng -->
+        {{ form.latitude }}
+        {{ form.longitude }}
+
+        <!-- Map Section -->
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label mb-0"><i class="bi bi-map text-success me-1"></i>Pin Location on Map</label>
+            <button type="button" class="btn btn-sm btn-outline-success" id="locateMeBtn">
+              <i class="bi bi-crosshair me-1"></i>Use My Current Location
+            </button>
+          </div>
+          <div id="report-map" style="height:340px;width:100%;border-radius:10px;border:2px solid #e2e8f0"></div>
+          <small class="text-muted mt-1 d-block">
+            <i class="bi bi-cursor me-1"></i>Click anywhere on the map to place the location pin.
+          </small>
+        </div>
+
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Priority flag (shown when duplicates found) -->
+      <div class="priority-flag" id="priorityFlag">
+        <span style="font-size:1.1rem">🚨</span>
+        <div>
+          <strong>High Priority Grouping Active</strong> —
+          Your report will be merged with
+          <strong id="priorityCount">0</strong> existing nearby report(s).
+          Municipal teams resolve grouped incidents faster.
+        </div>
+      </div>
+
+      <div class="d-flex gap-3">
+        <button type="submit" class="btn btn-eco btn-lg px-5" id="submitBtn">
+          <i class="bi bi-send me-2"></i>Submit Report
+        </button>
+        <a href="{% url 'user_dashboard' %}" class="btn btn-outline-secondary btn-lg">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function() {
+  'use strict';
+
+  const CHECK_URL  = "{% url 'check_duplicates' %}";
+  const CSRF       = "{{ csrf_token }}";
+
+  // ── DOM refs ──────────────────────────────────────────────────
+  const issueTypeEl   = document.getElementById('id_issue_type');
+  const latInput      = document.getElementById('latitude');
+  const lngInput      = document.getElementById('longitude');
+  const dupPanel      = document.getElementById('dupPanel');
+  const dupSubtitle   = document.getElementById('dupSubtitle');
+  const incSection    = document.getElementById('incidentsSection');
+  const incList       = document.getElementById('incidentsList');
+  const compSection   = document.getElementById('complaintsSection');
+  const compList      = document.getElementById('complaintsList');
+  const radiusSlider  = document.getElementById('radiusSlider');
+  const radiusLabel   = document.getElementById('radiusLabel');
+  const priorityFlag  = document.getElementById('priorityFlag');
+  const priorityCount = document.getElementById('priorityCount');
+  const submitBtn     = document.getElementById('submitBtn');
+  const closeDupBtn   = document.getElementById('closeDupPanel');
+
+  let dupCheckTimer   = null;
+  let lastLat = null, lastLng = null, lastType = null, lastRadius = 500;
+
+  // ── Image Detection ──────────────────────────────────────────
+  const photoInput     = document.querySelector('input[name="photo"]');
+  const imgWarnPanel   = document.getElementById('imgWarnPanel');
+  const imgWarnHeader  = document.getElementById('imgWarnHeader');
+  const imgWarnBody    = document.getElementById('imgWarnBody');
+  const imgWarnIcon    = document.getElementById('imgWarnIcon');
+  const imgWarnTitle   = document.getElementById('imgWarnTitle');
+  const imgWarnMsg     = document.getElementById('imgWarnMsg');
+  const removePhotoBtn = document.getElementById('removePhotoBtn');
+  const ignoreWarnBtn  = document.getElementById('ignoreWarnBtn');
+  const imgScanMsg     = document.getElementById('imgScanningMsg');
+  const photoBox       = document.getElementById('photoBox');
+
+  let imgBlocked = false;   // true = hard block (duplicate), false = soft warn (AI suspect)
+
+  if (photoInput) {
+    photoInput.addEventListener('change', async () => {
+      const file = photoInput.files[0];
+      if (!file) return;
+
+      // Preview
+      const previewEl = document.getElementById('photoPreview');
+      previewEl.src = URL.createObjectURL(file);
+      document.getElementById('photoPreviewWrap').style.display = '';
+
+      // Reset panel
+      imgWarnPanel.style.display = 'none';
+      imgBlocked = false;
+      submitBtn.disabled = false;
+      photoBox.classList.add('photo-scanning');
+      imgScanMsg.style.display = '';
+
+      try {
+        // ── 1. Server-side check (Duplicate + Deep AI Authenticity) ──
+        const fd = new FormData();
+        fd.append('image', file);
+        fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        const resp  = await fetch("{% url 'check_image' %}", { method: 'POST', body: fd });
+        const data  = await resp.json();
+
+        // Duplicate check
+        if (data.duplicate) {
+          showImgWarn(
+            'danger',
+            '🚫', 'Duplicate Photo Blocked',
+            'This <strong>exact photo</strong> has already been used in an existing complaint. ' +
+            'Please take a <strong>new, genuine photo</strong> right now at the waste location.',
+            false   // hard block — cannot proceed
+          );
+          imgBlocked = true;
+          submitBtn.disabled = true;
+          return;
+        }
+
+        // ── 2. Client-side AI generation heuristics ─────────────
+        const aiClientScore = await detectAIImage(file, previewEl);
+
+        // Check if AI generated (server deep analysis OR client heuristics)
+        const isAI = data.is_ai || aiClientScore >= 2;
+        if (isAI) {
+          const reasons = (data.reasons && data.reasons.length > 0)
+            ? data.reasons.map(r => `<li>${r}</li>`).join('')
+            : '<li>Synthetic image signature / missing genuine camera metadata detected</li>';
+
+          showImgWarn(
+            'danger',
+            '🤖', 'AI-Generated Image Blocked',
+            `Our AI detector identified this image as <strong>synthetic or AI-generated</strong>:<br>` +
+            `<ul class="mb-1 mt-1 ps-3" style="font-size:0.78rem">${reasons}</ul>` +
+            `Submissions require <strong>real, authentic photos</strong> captured directly at the location.`,
+            false   // hard block — cannot proceed
+          );
+          imgBlocked = true;
+          submitBtn.disabled = true;
+          return;
+        }
+
+        // Check if suspicious (soft advisory)
+        if (data.is_suspicious || aiClientScore >= 1) {
+          showImgWarn(
+            'warning',
+            '⚠️', 'Image Verification Advisory',
+            'This image does not contain standard camera device metadata. ' +
+            'Please ensure this is a genuine photo taken by you. False submissions may result in account penalties.',
+            true   // soft advisory
+          );
+          imgBlocked = false;
+          submitBtn.disabled = false;
+          return;
+        }
+
+        // Verified genuine photo
+        showImgWarn(
+          'success',
+          '✅', 'Authentic Photo Verified',
+          'Photo verified! Original camera capture confirmed — no duplicate or synthetic AI markers detected.',
+          false
+        );
+        imgBlocked = false;
+        submitBtn.disabled = false;
+
+      } catch(e) {
+        console.warn('Image check error:', e);
+      } finally {
+        photoBox.classList.remove('photo-scanning');
+        imgScanMsg.style.display = 'none';
+      }
+    });
+  }
+
+  removePhotoBtn.addEventListener('click', () => {
+    photoInput.value = '';
+    document.getElementById('photoPreviewWrap').style.display = 'none';
+    imgWarnPanel.style.display = 'none';
+    imgBlocked = false;
+    submitBtn.disabled = false;
+  });
+  ignoreWarnBtn.addEventListener('click', () => {
+    imgWarnPanel.style.display = 'none';
+    imgBlocked = false;
+    submitBtn.disabled = false;
+  });
+
+  // Guard against submitting blocked images
+  const reportForm = document.querySelector('form');
+  if (reportForm) {
+    reportForm.addEventListener('submit', (e) => {
+      if (imgBlocked) {
+        e.preventDefault();
+        alert('Cannot submit complaint: Duplicate or AI-generated photos are strictly prohibited. Please upload an original photo.');
+        return false;
+      }
+    });
+  }
+
+  function showImgWarn(type, icon, title, msg, allowProceed) {
+    imgWarnIcon.textContent  = icon;
+    imgWarnTitle.textContent = title;
+    imgWarnMsg.innerHTML     = msg;
+    imgWarnHeader.className  = 'img-warn-header ' + type;
+    imgWarnBody.className    = 'img-warn-body '   + type;
+    ignoreWarnBtn.style.display = allowProceed ? '' : 'none';
+    imgWarnPanel.style.display  = '';
+  }
+
+  // ── AI detection heuristics (returns score 0–5) ──────────────
+  async function detectAIImage(file, imgEl) {
+    let score = 0;
+    const signals = [];
+
+    // Signal 1: No EXIF camera data (AI images almost never have real EXIF)
+    try {
+      const exifBuffer = await file.arrayBuffer();
+      const view       = new DataView(exifBuffer);
+      let hasCamera = false;
+      // Look for "Canon","Nikon","Samsung","Apple","HUAWEI","Sony" in raw bytes
+      const raw = new Uint8Array(exifBuffer.slice(0, 65536));
+      const rawStr = String.fromCharCode(...raw).toLowerCase();
+      const cameraKeywords = ['canon','nikon','samsung','apple','sony','huawei','xiaomi','oppo','vivo','realme','fujifilm','olympus','panasonic'];
+      if (cameraKeywords.some(kw => rawStr.includes(kw))) hasCamera = true;
+
+      const isMake  = rawStr.includes('make\x00') || rawStr.includes('\x00make');
+      const isModel = rawStr.includes('model\x00') || rawStr.includes('\x00model');
+
+      if (!hasCamera && !isMake && !isModel && file.size > 50000) {
+        score++;
+        signals.push('No camera EXIF data');
+      }
+
+      // Check for raw AI generation signatures
+      const aiPromptKeywords = ['stable diffusion', 'midjourney', 'dall-e', 'dalle', 'novelai', 'automatic1111', 'comfyui', 'c2pa', 'flux.1', 'parameters\x00'];
+      if (aiPromptKeywords.some(kw => rawStr.includes(kw))) {
+        score += 2;
+        signals.push('AI generation metadata / software tag embedded in file');
+      }
+    } catch(e) {}
+
+    // Signal 2: Perfect power-of-2 dimensions (AI standard: 512, 768, 1024, 1536)
+    await new Promise(resolve => { imgEl.onload = resolve; if(imgEl.complete) resolve(); });
+    const w = imgEl.naturalWidth, h = imgEl.naturalHeight;
+    const aiDims = [512, 768, 1024, 1280, 1536, 2048];
+    if (aiDims.includes(w) && aiDims.includes(h)) {
+      score++;
+      signals.push(`AI dimension ${w}×${h}`);
+    }
+
+    // Signal 3: Perfect square (most AI outputs are square)
+    if (w === h && w >= 512) {
+      score++;
+      signals.push('Perfect square image');
+    }
+
+    // Signal 4: Unusually uniform noise (AI images have distinct noise patterns)
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 32; canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imgEl, 0, 0, 32, 32);
+      const pd = ctx.getImageData(0,0,32,32).data;
+      let rVar=0, gVar=0, bVar=0;
+      let rMean=0, gMean=0, bMean=0;
+      const n = pd.length / 4;
+      for(let i=0;i<pd.length;i+=4){ rMean+=pd[i]; gMean+=pd[i+1]; bMean+=pd[i+2]; }
+      rMean/=n; gMean/=n; bMean/=n;
+      for(let i=0;i<pd.length;i+=4){
+        rVar+=Math.pow(pd[i]-rMean,2);
+        gVar+=Math.pow(pd[i+1]-gMean,2);
+        bVar+=Math.pow(pd[i+2]-bMean,2);
+      }
+      rVar/=n; gVar/=n; bVar/=n;
+      // Very low channel variance often means generated/edited
+      if(rVar < 600 && gVar < 600 && bVar < 600 && file.type !== 'image/gif') {
+        score++;
+        signals.push('Unusually uniform color channels');
+      }
+    } catch(e) {}
+
+    // Signal 5: File name pattern (AI tools use: image.png, output.png, generated_*, etc.)
+    const fname = file.name.toLowerCase();
+    const aiNames = ['output','generated','image','dalle','midjourney','stable','diffusion','ai_','comfy'];
+    if (aiNames.some(n => fname.startsWith(n)) && !fname.includes('_20') && !fname.includes('img-20')) {
+      score++;
+      signals.push(`Suspicious filename: "${file.name}"`);
+    }
+
+    console.log('AI score:', score, '| Signals:', signals);
+    return score;
+  }
+
+  // Intercept form submit to block if hard-blocked
+  document.getElementById('reportForm').addEventListener('submit', (e) => {
+    if (imgBlocked) {
+      e.preventDefault();
+      imgWarnPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+
+
+  // ── Radius slider ──
+  radiusSlider.addEventListener('input', () => {
+    lastRadius = parseInt(radiusSlider.value);
+    radiusLabel.textContent = lastRadius + ' m';
+    triggerCheck();
+  });
+  closeDupBtn.addEventListener('click', () => { dupPanel.style.display = 'none'; });
+
+  // ── Map + form watchers ──
+  function renderReportMap() {
+    if (typeof initReportMap === 'function') {
+      initReportMap(28.6139, 77.2090);
+    }
+
+    const locateBtn = document.getElementById('locateMeBtn');
+    if (locateBtn && navigator.geolocation) {
+      locateBtn.addEventListener('click', function() {
+        locateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Locating...';
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          locateBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Location Found!';
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          if (window._maps && window._maps['report-map']) {
+            window._maps['report-map'].setView([lat, lng], 15);
+            window._maps['report-map'].fire('click', { latlng: { lat, lng } });
+          }
+        }, function() {
+          locateBtn.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i>Permission Denied';
+        });
+      });
+    }
+  }
+
+  // Watch lat/lng hidden inputs (set by map click)
+  function watchCoords() {
+    const observer = new MutationObserver(onLocationChange);
+    if (latInput) observer.observe(latInput, { attributes: true, attributeFilter: ['value'] });
+    if (lngInput) observer.observe(lngInput, { attributes: true, attributeFilter: ['value'] });
+
+    // Also poll (in case value changes without attribute mutation)
+    setInterval(() => {
+      const lat = latInput ? latInput.value : '';
+      const lng = lngInput ? lngInput.value : '';
+      const type = issueTypeEl ? issueTypeEl.value : '';
+      if (lat && lng && type && (lat !== lastLat || lng !== lastLng || type !== lastType)) {
+        lastLat = lat; lastLng = lng; lastType = type;
+        triggerCheck();
+      }
+    }, 600);
+  }
+
+  // issue_type change
+  if (issueTypeEl) {
+    issueTypeEl.addEventListener('change', () => {
+      lastType = issueTypeEl.value;
+      triggerCheck();
+    });
+  }
+
+  function onLocationChange() {
+    const lat = latInput ? latInput.value : '';
+    const lng = lngInput ? lngInput.value : '';
+    if (lat && lng) { lastLat = lat; lastLng = lng; triggerCheck(); }
+  }
+
+  function triggerCheck() {
+    clearTimeout(dupCheckTimer);
+    dupCheckTimer = setTimeout(checkDuplicates, 800);  // debounce 800ms
+  }
+
+  async function checkDuplicates() {
+    const lat  = latInput  ? latInput.value  : '';
+    const lng  = lngInput  ? lngInput.value  : '';
+    const type = issueTypeEl ? issueTypeEl.value : '';
+    if (!lat || !lng || !type) return;
+
+    try {
+      const url = `${CHECK_URL}?lat=${lat}&lng=${lng}&issue_type=${encodeURIComponent(type)}&radius=${lastRadius}`;
+      const resp = await fetch(url, { headers: { 'X-CSRFToken': CSRF } });
+      const data = await resp.json();
+      renderDuplicates(data);
+    } catch(e) { console.warn('Dup check failed:', e); }
+  }
+
+  function renderDuplicates(data) {
+    const { incidents, complaints } = data;
+    const total = incidents.length + complaints.length;
+
+    if (total === 0) {
+      dupPanel.style.display = 'none';
+      priorityFlag.classList.remove('show');
+      submitBtn.classList.remove('btn-warn-submit');
+      submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Submit Report';
+      return;
+    }
+
+    // Build incidents HTML
+    if (incidents.length > 0) {
+      incSection.style.display = '';
+      incList.innerHTML = incidents.map(inc => `
+        <div class="incident-card">
+          <div class="incident-badge">${inc.report_count}</div>
+          <div class="flex-grow-1">
+            <div class="fw-700" style="font-size:0.88rem">
+              <i class="bi bi-diagram-3 me-1 text-warning"></i>Common Incident #${inc.id}
+              <span class="badge ms-1" style="background:#ff6b35;font-size:0.72rem">${inc.status}</span>
+            </div>
+            <div class="text-muted" style="font-size:0.78rem">
+              📍 ${inc.location || 'Location not specified'} &nbsp;·&nbsp;
+              📏 ${inc.distance_m} m away
+            </div>
+          </div>
+          <div class="text-end">
+            <span class="fw-700" style="color:#c2410c;font-size:1rem">${inc.report_count}</span>
+            <div class="text-muted" style="font-size:0.7rem">reports</div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      incSection.style.display = 'none';
+    }
+
+    // Build individual complaints HTML
+    if (complaints.length > 0) {
+      compSection.style.display = '';
+      compList.innerHTML = complaints.map(c => `
+        <div class="comp-card">
+          <div class="comp-dot"></div>
+          <div class="flex-grow-1">
+            <strong>${c.title || 'Untitled'}</strong>
+            <span class="text-muted ms-1">· ${c.distance_m} m away · ${c.date}</span>
+          </div>
+          <span class="badge bg-warning text-dark" style="font-size:0.7rem">${c.status}</span>
+        </div>
+      `).join('');
+    } else {
+      compSection.style.display = 'none';
+    }
+
+    // Subtitle
+    const incCount  = incidents.length;
+    const compCount = complaints.length;
+    let subtitle = '';
+    if (incCount > 0) subtitle += `${incCount} grouped incident${incCount>1?'s':''}`;
+    if (compCount > 0) subtitle += (subtitle ? ' + ' : '') + `${compCount} individual report${compCount>1?'s':''}`;
+    dupSubtitle.textContent = subtitle + ` within ${lastRadius}m`;
+
+    // Show panel
+    dupPanel.style.display = '';
+
+    // High-priority flag on submit button
+    const topCount = incidents.length > 0 ? incidents[0].report_count : compCount;
+    priorityCount.textContent = incidents.length > 0 ? incidents[0].report_count : compCount;
+    priorityFlag.classList.add('show');
+    submitBtn.classList.add('btn-warn-submit');
+    submitBtn.innerHTML = `<i class="bi bi-send-fill me-2"></i>Submit & Join ${topCount > 1 ? topCount + ' Reports' : 'Incident'}`;
+  }
+
+  // ── Init ──
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { renderReportMap(); watchCoords(); });
+  } else {
+    renderReportMap();
+    watchCoords();
+  }
+
+})();
+</script>
+{% endblock %}

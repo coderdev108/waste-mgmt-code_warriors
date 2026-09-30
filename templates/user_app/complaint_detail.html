@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block title %}Complaint #{{ complaint.pk }}{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Star Rating Widget ─────────────────────────── */
+.star-rating { display: flex; flex-direction: row-reverse; gap: 4px; justify-content: flex-end; }
+.star-rating input { display: none; }
+.star-rating label {
+  font-size: 2rem; cursor: pointer; color: #d1d5db;
+  transition: color 0.15s, transform 0.15s;
+}
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label { color: #f59e0b; transform: scale(1.15); }
+.star-rating label:hover { transform: scale(1.25); }
+.feedback-submitted { display:none; }
+.feedback-submitted.show { display:block; animation: fadeIn 0.5s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 fade-in" style="max-width:950px">
+
+  <!-- Back -->
+  <div class="mb-3">
+    <a href="{% url 'my_complaints' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back to My Complaints
+    </a>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Main Complaint Info -->
+    <div class="col-lg-8">
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <span class="badge bg-light text-dark me-2">{{ complaint.get_issue_type_display }}</span>
+            <span class="badge status-{{ complaint.status }}">{{ complaint.get_status_display }}</span>
+          </div>
+          <small class="text-muted">{{ complaint.created_at|date:"d M Y, g:i A" }}</small>
+        </div>
+        <div class="card-body">
+          <h4 class="fw-700 mb-3">{{ complaint.title }}</h4>
+
+          {% if complaint.photo %}
+          <div class="mb-3">
+            <img src="{{ complaint.photo.url }}" alt="Issue photo"
+                 class="img-fluid rounded shadow-sm" style="max-height:320px;width:100%;object-fit:cover">
+          </div>
+          {% endif %}
+
+          <p class="text-muted mb-3">{{ complaint.description }}</p>
+
+          {% if complaint.location_address %}
+          <div class="p-3 rounded mb-3" style="background:var(--light-2);border:1px solid var(--primary-light)">
+            <i class="bi bi-geo-alt text-success me-2"></i>
+            <strong>Location:</strong> {{ complaint.location_address }}
+          </div>
+          {% endif %}
+
+          {% if complaint.latitude and complaint.longitude %}
+          <div class="mb-3">
+            <label class="form-label fw-600 text-muted small"><i class="bi bi-map text-success me-1"></i>PINNED LOCATION</label>
+            <div id="complaint-map" style="height:220px;border-radius:10px;border:1px solid #e2e8f0"></div>
+          </div>
+          {% endif %}
+
+          {% if complaint.admin_notes %}
+          <div class="p-3 rounded" style="background:#e8f4fd;border:1px solid #bee5fb">
+            <i class="bi bi-chat-dots text-primary me-2"></i>
+            <strong>Municipal Note:</strong> {{ complaint.admin_notes }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Proof Photos (from collector) -->
+      {% if proofs %}
+      <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-check-circle-fill text-success me-2"></i>Verification &amp; Collection Proof</div>
+        <div class="card-body">
+          {% for proof in proofs %}
+          <div class="mb-3 p-3 rounded" style="background:var(--light-2)">
+            <div class="d-flex justify-content-between mb-2">
+              <strong>Collected by: {{ proof.collected_by.get_full_name|default:proof.collected_by.username }}</strong>
+              <small class="text-muted">{{ proof.created_at|date:"d M Y, g:i A" }}</small>
+            </div>
+            {% if proof.photo %}
+            <img src="{{ proof.photo.url }}" alt="Collection proof"
+                 class="img-fluid rounded shadow-sm" style="max-height:220px;width:100%;object-fit:cover">
+            {% endif %}
+            {% if proof.notes %}
+            <p class="mt-2 mb-0 text-muted small"><strong>Notes:</strong> {{ proof.notes }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ════ CITIZEN FEEDBACK & RATING ════ -->
+      {% if complaint.status == 'resolved' %}
+      <div class="card" id="feedbackSection">
+        <div class="card-header d-flex align-items-center gap-2">
+          <span style="font-size:1.2rem">⭐</span>
+          <span class="fw-700">Rate Your Experience</span>
+        </div>
+        <div class="card-body">
+
+          <!-- Already submitted -->
+          <div class="feedback-submitted text-center py-3" id="feedbackDone">
+            <div style="font-size:2.5rem">🎉</div>
+            <h5 class="fw-700 mt-2 mb-1">Thank you for your feedback!</h5>
+            <div class="text-muted small mb-2">Your rating helps us improve municipal services.</div>
+            <div id="doneStars" class="fs-4 mb-1"></div>
+            <p class="text-muted small mb-0" id="doneComment"></p>
+          </div>
+
+          <!-- Form -->
+          <div id="feedbackForm">
+            <p class="text-muted small mb-3">
+              <i class="bi bi-question-circle me-1 text-success"></i>
+              <strong>Was your issue resolved satisfactorily?</strong>
+            </p>
+
+            <!-- Star selector -->
+            <div class="mb-3">
+              <label class="form-label fw-600 small text-muted">YOUR RATING</label>
+              <div class="star-rating" id="starRating">
+                <input type="radio" name="rating" id="star5" value="5">
+                <label for="star5" title="5 stars – Excellent">★</label>
+                <input type="radio" name="rating" id="star4" value="4">
+                <label for="star4" title="4 stars – Good">★</label>
+                <input type="radio" name="rating" id="star3" value="3">
+                <label for="star3" title="3 stars – Average">★</label>
+                <input type="radio" name="rating" id="star2" value="2">
+                <label for="star2" title="2 stars – Poor">★</label>
+                <input type="radio" name="rating" id="star1" value="1">
+                <label for="star1" title="1 star – Very Poor">★</label>
+              </div>
+              <div class="mt-1" id="ratingLabel" style="font-size:0.8rem;color:#6b7280;min-height:18px"></div>
+            </div>
+
+            <!-- Comment -->
+            <div class="mb-3">
+              <label class="form-label fw-600 small text-muted">COMMENT (OPTIONAL)</label>
+              <textarea id="feedbackComment" class="form-control" rows="3"
+                placeholder="Share details about your experience — response time, collector behaviour, resolution quality…"></textarea>
+            </div>
+
+            <button class="btn btn-success fw-600 px-4" id="submitFeedbackBtn" disabled>
+              <i class="bi bi-send me-1"></i>Submit Feedback
+            </button>
+            <span class="ms-2 text-muted small" id="feedbackMsg"></span>
+          </div>
+
+        </div>
+      </div>
+      {% endif %}
+      <!-- ══════════════════════════════════ -->
+
+    </div>
+
+    <!-- Status Timeline -->
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header"><i class="bi bi-clock-history text-success me-2"></i>Status Timeline</div>
+        <div class="card-body">
+          <div class="timeline">
+
+            <div class="timeline-item {% if complaint.status in 'pending,in_progress,resolved' %}active{% else %}inactive{% endif %}">
+              <div class="fw-600" style="font-size:0.875rem">⏳ Submitted</div>
+              <small class="text-muted">{{ complaint.created_at|date:"d M Y" }}</small>
+            </div>
+
+            <div class="timeline-item {% if complaint.status in 'in_progress,resolved' %}active{% else %}inactive{% endif %}">
+              <div class="fw-600" style="font-size:0.875rem">🔄 In Progress</div>
+              <small class="text-muted">
+                {% if complaint.status in 'in_progress,resolved' %}Being handled{% else %}Awaiting assignment{% endif %}
+              </small>
+            </div>
+
+            {% if complaint.assigned_to %}
+            <div class="timeline-item active">
+              <div class="fw-600" style="font-size:0.875rem">👷 Assigned</div>
+              <small class="text-muted">{{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.username }}</small>
+            </div>
+            {% endif %}
+
+            <div class="timeline-item {% if complaint.status == 'resolved' %}active{% else %}inactive{% endif %}">
+              <div class="fw-600" style="font-size:0.875rem">✅ Resolved</div>
+              <small class="text-muted">
+                {% if complaint.status == 'resolved' %}{{ complaint.updated_at|date:"d M Y" }}{% else %}Pending{% endif %}
+              </small>
+            </div>
+
+          </div>
+
+          {% if complaint.assigned_to %}
+          <div class="mt-4 p-3 rounded" style="background:var(--light-2);border:1px solid var(--primary-light)">
+            <div class="text-muted small fw-600 mb-1">ASSIGNED COLLECTOR</div>
+            <div class="fw-600">
+              🚛 {{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.username }}
+            </div>
+            {% if complaint.assigned_to.zone %}
+            <small class="text-muted">Zone: {{ complaint.assigned_to.zone }}</small>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Incident Group Card -->
+      {% if complaint.incident %}
+      <div class="card mt-4">
+        <div class="card-header d-flex align-items-center gap-2"
+             style="background:linear-gradient(135deg,#fff3e0,#fff8f5);border-bottom:1px solid #ff980040">
+          <span style="font-size:1.1rem">🔥</span>
+          <span class="fw-700" style="color:#c2410c">Grouped Incident</span>
+          <span class="badge ms-auto"
+                style="background:{% if complaint.incident.report_count >= 5 %}#ef4444{% elif complaint.incident.report_count >= 3 %}#f97316{% else %}#f59e0b{% endif %};color:white">
+            {{ complaint.incident.report_count }} report{{ complaint.incident.report_count|pluralize }}
+          </span>
+        </div>
+        <div class="card-body py-3" style="font-size:0.85rem">
+          <div class="text-muted small fw-600 text-uppercase mb-2">INCIDENT #{{ complaint.incident.pk }}</div>
+
+          <!-- Heat bar -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="small text-muted">Community Reports</span>
+              <span class="small fw-700" style="color:#f97316">{{ complaint.incident.report_count }}</span>
+            </div>
+            <div style="height:8px;background:#fee2e2;border-radius:99px;overflow:hidden">
+              <div style="height:100%;border-radius:99px;width:{% widthratio complaint.incident.report_count 20 100 %}%;
+                           background:linear-gradient(90deg,#f59e0b,#ef4444);
+                           max-width:100%;transition:width 1s ease"></div>
+            </div>
+            <div class="d-flex justify-content-between mt-1">
+              <span style="font-size:0.7rem;color:#9ca3af">1</span>
+              <span style="font-size:0.7rem;color:#9ca3af">20+</span>
+            </div>
+          </div>
+
+          {% if complaint.incident.report_count >= 3 %}
+          <div class="p-2 rounded mb-2" style="background:#fef3c7;border:1px solid #f59e0b;font-size:0.8rem;color:#92400e">
+            🚨 <strong>High Priority Case</strong> — Multiple citizens have reported the same issue. Municipal teams prioritise grouped incidents.
+          </div>
+          {% endif %}
+
+          <div class="text-muted" style="font-size:0.78rem">
+            <div><i class="bi bi-geo-alt me-1 text-success"></i>{{ complaint.incident.location_address|default:"Location recorded" }}</div>
+            <div class="mt-1"><i class="bi bi-circle-fill me-1" style="font-size:0.5rem;color:{% if complaint.incident.status == 'open' %}#f59e0b{% elif complaint.incident.status == 'in_progress' %}#3b82f6{% else %}#22c55e{% endif %}"></i>
+              Incident Status: <strong>{{ complaint.incident.get_status_display }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+
+{% block extra_scripts %}
+{% if complaint.latitude and complaint.longitude %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  initSingleLocationMap('complaint-map', '{{ complaint.latitude }}', '{{ complaint.longitude }}', '{{ complaint.title|escapejs }}', '{{ complaint.location_address|escapejs }}');
+});
+</script>
+{% endif %}
+
+{% if complaint.status == 'resolved' %}
+<script>
+(function() {
+  const SUBMIT_URL = "{% url 'submit_feedback' complaint.pk %}";
+  const GET_URL    = "{% url 'get_feedback' complaint.pk %}";
+  const CSRF       = "{{ csrf_token }}";
+
+  const ratingLabels = {1:'Very Poor 😞', 2:'Poor 😕', 3:'Average 😐', 4:'Good 🙂', 5:'Excellent 😃'};
+  const starInputs   = document.querySelectorAll('.star-rating input[name="rating"]');
+  const ratingLbl    = document.getElementById('ratingLabel');
+  const submitBtn    = document.getElementById('submitFeedbackBtn');
+  const feedbackMsg  = document.getElementById('feedbackMsg');
+  const feedbackForm = document.getElementById('feedbackForm');
+  const feedbackDone = document.getElementById('feedbackDone');
+
+  let selectedRating = 0;
+
+  // Check if already submitted
+  fetch(GET_URL).then(r => r.json()).then(data => {
+    if (data.rating) {
+      showDoneState(data.rating, data.comment);
+    }
+  });
+
+  // Star interaction
+  starInputs.forEach(inp => {
+    inp.addEventListener('change', () => {
+      selectedRating = parseInt(inp.value);
+      ratingLbl.textContent = ratingLabels[selectedRating] || '';
+      submitBtn.disabled = false;
+    });
+  });
+
+  // Submit
+  submitBtn.addEventListener('click', async () => {
+    if (!selectedRating) return;
+    const comment = document.getElementById('feedbackComment').value.trim();
+    submitBtn.disabled = true;
+    feedbackMsg.textContent = 'Submitting…';
+
+    try {
+      const resp = await fetch(SUBMIT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CSRF
+        },
+        body: JSON.stringify({ rating: selectedRating, comment })
+      });
+      const data = await resp.json();
+      if (data.status === 'ok') {
+        showDoneState(selectedRating, comment);
+      } else {
+        feedbackMsg.textContent = data.message || 'Error. Try again.';
+        submitBtn.disabled = false;
+      }
+    } catch(e) {
+      feedbackMsg.textContent = 'Network error. Please try again.';
+      submitBtn.disabled = false;
+    }
+  });
+
+  function showDoneState(rating, comment) {
+    feedbackForm.style.display = 'none';
+    feedbackDone.classList.add('show');
+    document.getElementById('doneStars').textContent = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+    document.getElementById('doneStars').style.color = '#f59e0b';
+    if (comment) document.getElementById('doneComment').textContent = '"' + comment + '"';
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

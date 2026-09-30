@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ===================== SEO META TAGS ===================== -->
+  <title>{% block title %}Smart Waste Management & Municipal Grievance Redressal{% endblock %} | EcoCity</title>
+  <meta name="description" content="EcoCity Smart Waste Management System is a modern digital platform connecting citizens, municipal authorities, and waste collectors for cleaner cities, real-time GPS tracking, scheduled pickups, and instant grievance resolution.">
+  <meta name="keywords" content="Smart Waste Management, Municipal Solid Waste, Waste Segregation, Swachh Bharat, Garbage Collection Tracking, Clean City Initiative, Online Complaint Portal, Recyclable Pickup">
+  <meta name="author" content="Team 7 - Smart Cities Tech Initiative">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#2ecc71">
+
+  <!-- Open Graph / Facebook / WhatsApp SEO -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="EcoCity Smart Waste Management">
+  <meta property="og:title" content="EcoCity - Intelligent Municipal Waste & Citizen Service Platform">
+  <meta property="og:description" content="Report garbage overflow, schedule doorstep waste pickup, and track collector vehicles in real-time. Join the clean city mission.">
+  <meta property="og:image" content="{% static 'img/smart_city_banner.jpg' %}">
+  <meta property="og:locale" content="en_IN">
+
+  <!-- Twitter Card SEO -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="EcoCity - Smart Urban Waste Management">
+  <meta name="twitter:description" content="Digital governance for cleaner streets, prompt waste collection, and sustainable urban living.">
+  <meta name="twitter:image" content="{% static 'img/smart_city_banner.jpg' %}">
+
+  <!-- Schema.org JSON-LD Structured Data for SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "GovernmentOrganization",
+    "name": "EcoCity Smart Waste Management",
+    "url": "http://127.0.0.1:8000/",
+    "logo": "http://127.0.0.1:8000/static/img/smart_city_banner.jpg",
+    "description": "Intelligent digital waste collection, grievance redressal, and sustainable resource management system for smart cities.",
+    "serviceType": "Municipal Solid Waste Management & Citizen Grievance Portal",
+    "areaServed": "All Municipal Zones & Urban Local Bodies",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+91-1800-11-2024",
+      "contactType": "Citizen Waste Helpline",
+      "availableLanguage": ["English", "Hindi"]
+    }
+  }
+  </script>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ===================== NAVBAR ===================== -->
+{% if user.is_authenticated %}
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand navbar-brand-logo" href="{% url 'role_redirect' %}">
+      🌿 EcoCity
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-center gap-1">
+
+        {% if user.role == 'citizen' or user.role == '' %}
+        <!-- Citizen Nav Links -->
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}"
+             href="{% url 'user_dashboard' %}">
+            <i class="bi bi-house-door me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'report_issue' %}active{% endif %}"
+             href="{% url 'report_issue' %}">
+            <i class="bi bi-exclamation-triangle me-1"></i>Report Issue
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'pickup_request' %}active{% endif %}"
+             href="{% url 'pickup_request' %}">
+            <i class="bi bi-truck me-1"></i>Request Pickup
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'my_complaints' %}active{% endif %}"
+             href="{% url 'my_complaints' %}">
+            <i class="bi bi-list-check me-1"></i>My Complaints
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'ai_waste_scan' %}active{% endif %}"
+             href="{% url 'ai_waste_scan' %}">
+            <i class="bi bi-robot me-1"></i>AI Scan
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'awareness' %}active{% endif %}"
+             href="{% url 'awareness' %}">
+            <i class="bi bi-lightbulb me-1"></i>Eco Tips
+          </a>
+        </li>
+        {% endif %}
+
+
+        {% if user.role == 'collector' %}
+        <!-- Collector Nav Links -->
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'collector_dashboard' %}active{% endif %}"
+             href="{% url 'collector_dashboard' %}">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'my_tasks' %}active{% endif %}"
+             href="{% url 'my_tasks' %}">
+            <i class="bi bi-list-task me-1"></i>My Tasks
+          </a>
+        </li>
+        {% endif %}
+
+        <!-- User dropdown -->
+        <li class="nav-item dropdown ms-2">
+          <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button"
+             data-bs-toggle="dropdown" style="color:white !important">
+            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#2ecc71,#3498db);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:white">
+              {{ user.username|first|upper }}
+            </div>
+            {{ user.get_full_name|default:user.username }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">{{ user.get_role_display }} Account</h6></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                <i class="bi bi-box-arrow-right me-2"></i>Logout
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+{% endif %}
+
+<!-- ===================== MESSAGES ===================== -->
+{% if messages %}
+<div class="messages-container">
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }} alert-dismissible auto-dismiss fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ===================== CONTENT ===================== -->
+{% block content %}{% endblock %}
+
+<!-- ===================== FOOTER ===================== -->
+{% if user.is_authenticated %}
+<footer>
+  <div class="container">
+    <p class="mb-1">
+      <span class="footer-logo">🌿 EcoCity</span> &nbsp;|&nbsp; Smart Waste Management System
+    </p>
+    <p class="mb-0" style="font-size:0.78rem">
+      &copy; 2024 Team 7. Built for a cleaner tomorrow. 🌍 |
+      <a href="{% url 'awareness' %}" {% if user.role != 'citizen' %}style="pointer-events:none;opacity:0.5"{% endif %}>Eco Tips</a>
+    </p>
+  </div>
+</footer>
+{% endif %}
+
+<!-- ===================== SCRIPTS ===================== -->
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Leaflet JS -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<!-- Custom JS -->
+<script src="{% static 'js/main.js' %}"></script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

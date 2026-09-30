@@ -1,0 +1,133 @@
+{% extends "admin_app/base_admin.html" %}
+{% block title %}Manage Collectors{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h1 class="h3 mb-1"><i class="bi bi-truck me-2"></i>Collector Accounts</h1>
+  <p class="mb-0">Manage waste collection teams and add new collectors.</p>
+</div>
+
+<div class="row g-4">
+
+  <!-- Collectors List -->
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">{{ collectors.count }} active collector(s)</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-modern mb-0">
+            <thead>
+              <tr>
+                <th>Collector</th>
+                <th>Contact</th>
+                <th>Zone</th>
+                <th>Status</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for collector in collectors %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f39c12,#e67e22);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.85rem;flex-shrink:0">
+                      {{ collector.username|first|upper }}
+                    </div>
+                    <div>
+                      <div class="fw-600" style="font-size:0.875rem">{{ collector.get_full_name|default:collector.username }}</div>
+                      <small class="text-muted">@{{ collector.username }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div style="font-size:0.875rem">{{ collector.email|default:"—" }}</div>
+                  <small class="text-muted">{{ collector.phone|default:"No phone" }}</small>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark">
+                    {{ collector.zone|default:"No zone" }}
+                  </span>
+                </td>
+                <td>
+                  {% if collector.is_active %}
+                  <span class="badge bg-success">Active</span>
+                  {% else %}
+                  <span class="badge bg-danger">Inactive</span>
+                  {% endif %}
+                </td>
+                <td><small class="text-muted">{{ collector.date_joined|date:"d M Y" }}</small></td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">
+                  No collectors added yet. Add one using the form.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Collector Form -->
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-plus text-success me-2"></i>Add New Collector</div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">First Name</label>
+              <input type="text" name="first_name" class="form-control" placeholder="John">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Last Name</label>
+              <input type="text" name="last_name" class="form-control" placeholder="Doe">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Username *</label>
+              <input type="text" name="username" class="form-control" placeholder="collector01" required>
+              {% if form.username.errors %}<div class="text-danger small">{{ form.username.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label">Email *</label>
+              <input type="email" name="email" class="form-control" placeholder="collector@city.gov" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Phone</label>
+              <input type="tel" name="phone" class="form-control" placeholder="+91 XXXXX XXXXX">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Assigned Zone</label>
+              <input type="text" name="zone" class="form-control" placeholder="e.g., Zone A - North City">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Password *</label>
+              <input type="password" name="password1" class="form-control" placeholder="Password" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Confirm *</label>
+              <input type="password" name="password2" class="form-control" placeholder="Repeat" required>
+            </div>
+          </div>
+
+          {% if form.non_field_errors %}
+          <div class="alert alert-danger mt-2 small">{{ form.non_field_errors.0 }}</div>
+          {% endif %}
+
+          <div class="d-grid mt-3">
+            <button type="submit" class="btn btn-eco">
+              <i class="bi bi-plus-circle me-2"></i>Add Collector
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "admin_app/base_admin.html" %}
+{% block title %}Manage Citizens{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h1 class="h3 mb-1"><i class="bi bi-people me-2"></i>Citizen Accounts</h1>
+  <p class="mb-0">View and manage all registered citizen accounts.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">{{ users.count }} citizen(s) registered</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-modern mb-0">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Contact</th>
+            <th>Address</th>
+            <th>Joined</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for citizen in users %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2ecc71,#3498db);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:0.85rem;flex-shrink:0">
+                  {{ citizen.username|first|upper }}
+                </div>
+                <div>
+                  <div class="fw-600" style="font-size:0.875rem">{{ citizen.get_full_name|default:citizen.username }}</div>
+                  <small class="text-muted">@{{ citizen.username }}</small>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:0.875rem">{{ citizen.email|default:"—" }}</div>
+              <small class="text-muted">{{ citizen.phone|default:"No phone" }}</small>
+            </td>
+            <td><small class="text-muted">{{ citizen.address|truncatechars:35|default:"—" }}</small></td>
+            <td><small class="text-muted">{{ citizen.date_joined|date:"d M Y" }}</small></td>
+            <td>
+              {% if citizen.is_active %}
+              <span class="badge bg-success">Active</span>
+              {% else %}
+              <span class="badge bg-danger">Deactivated</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'toggle_user_status' citizen.pk %}"
+                 class="btn btn-sm {% if citizen.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                 onclick="return confirm('Are you sure?')">
+                {% if citizen.is_active %}Deactivate{% else %}Activate{% endif %}
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-4 text-muted">No citizens registered yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

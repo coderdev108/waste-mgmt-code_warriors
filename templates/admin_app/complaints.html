@@ -1,0 +1,136 @@
+{% extends "admin_app/base_admin.html" %}
+{% block title %}All Complaints{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+  <h1 class="h3 mb-1"><i class="bi bi-list-check me-2"></i>Complaints Management</h1>
+  <p class="mb-0">View, filter, and assign all citizen complaints to collectors.</p>
+</div>
+
+<!-- Filter Bar -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label text-muted small fw-600">SEARCH</label>
+        <input type="text" name="search" class="form-control" placeholder="Search title, description, location..."
+               value="{{ search }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label text-muted small fw-600">STATUS</label>
+        <select name="status" class="form-select auto-filter">
+          <option value="">All Statuses</option>
+          {% for value, label in statuses %}
+          <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label text-muted small fw-600">ISSUE TYPE</label>
+        <select name="issue_type" class="form-select auto-filter">
+          <option value="">All Types</option>
+          {% for value, label in issue_types %}
+          <option value="{{ value }}" {% if issue_type_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-eco w-100">
+          <i class="bi bi-search me-1"></i>Search
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><strong>{{ complaints.count }}</strong> complaint(s) found</span>
+    <div class="d-flex gap-2">
+      <a href="?status=pending" class="btn btn-sm btn-warning">⏳ Pending Only</a>
+      <a href="{% url 'all_complaints' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-modern mb-0">
+        <thead>
+          <tr>
+            <th>#ID</th>
+            <th>Photo</th>
+            <th>Title & Type</th>
+            <th>Reported By</th>
+            <th>Location</th>
+            <th>Assigned To</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for complaint in complaints %}
+          <tr>
+            <td><small class="text-muted fw-600">#{{ complaint.pk }}</small></td>
+            <td>
+              {% if complaint.photo %}
+              <a href="{{ complaint.photo.url }}" target="_blank">
+                <img src="{{ complaint.photo.url }}" alt="Trash photo"
+                     class="rounded shadow-sm" style="width:48px;height:48px;object-fit:cover;border:1px solid #e2e8f0">
+              </a>
+              {% else %}
+              <div class="rounded d-flex align-items-center justify-content-center bg-light text-muted" style="width:48px;height:48px;font-size:1.2rem">
+                🗑️
+              </div>
+              {% endif %}
+            </td>
+            <td>
+              <strong style="font-size:0.875rem">{{ complaint.title|truncatechars:40 }}</strong>
+              <br>
+              <small class="badge bg-light text-dark">{{ complaint.get_issue_type_display }}</small>
+            </td>
+            <td>
+              <div style="font-size:0.875rem">{{ complaint.reported_by.get_full_name|default:complaint.reported_by.username }}</div>
+              <small class="text-muted">{{ complaint.reported_by.phone|default:"" }}</small>
+            </td>
+            <td>
+              <small class="text-muted">{{ complaint.location_address|truncatechars:28|default:"Not specified" }}</small>
+              {% if complaint.latitude and complaint.longitude %}
+              <br><small class="text-success"><i class="bi bi-geo-alt-fill"></i> GPS Pinned</small>
+              {% endif %}
+            </td>
+            <td>
+              {% if complaint.assigned_to %}
+              <span class="badge" style="background:#e8f5e9;color:#27ae60;font-weight:600">
+                🚛 {{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.username }}
+              </span>
+              {% else %}
+              <span class="badge bg-secondary text-white">Unassigned</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge status-{{ complaint.status }}">{{ complaint.get_status_display }}</span>
+            </td>
+            <td>
+              <small class="text-muted">{{ complaint.created_at|date:"d M Y" }}</small>
+            </td>
+            <td>
+              <a href="{% url 'assign_complaint' complaint.pk %}"
+                 class="btn btn-sm btn-eco">
+                <i class="bi bi-person-check me-1"></i>Assign
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-4 text-muted">
+              No complaints found matching criteria.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

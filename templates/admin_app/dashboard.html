@@ -1,0 +1,242 @@
+{% extends "admin_app/base_admin.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="page-header mb-4">
+  <div class="row align-items-center">
+    <div class="col">
+      <h1 class="h3 mb-1">🏙️ Municipal Dashboard</h1>
+      <p class="mb-0">Overview of Smart Waste Management operations.</p>
+    </div>
+    <div class="col-auto">
+      <a href="{% url 'all_complaints' %}?status=pending" class="btn btn-eco">
+        <i class="bi bi-exclamation-circle me-1"></i>View Pending ({{ pending_complaints }})
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards Row 1 -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-blue">
+      <div class="stat-icon">📋</div>
+      <div class="stat-value">{{ total_complaints }}</div>
+      <div class="stat-label">Total Complaints</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-orange">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-value">{{ pending_complaints }}</div>
+      <div class="stat-label">Pending</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-teal">
+      <div class="stat-icon">🔄</div>
+      <div class="stat-value">{{ in_progress_complaints }}</div>
+      <div class="stat-label">In Progress</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-green">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value">{{ resolved_complaints }}</div>
+      <div class="stat-label">Resolved</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Row 2 -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-purple">
+      <div class="stat-icon">🚛</div>
+      <div class="stat-value">{{ total_pickups }}</div>
+      <div class="stat-label">Total Pickups</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#f39c12,#e67e22)">
+      <div class="stat-icon">🕐</div>
+      <div class="stat-value">{{ pending_pickups }}</div>
+      <div class="stat-label">Pending Pickups</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#1abc9c,#16a085)">
+      <div class="stat-icon">👥</div>
+      <div class="stat-value">{{ total_users }}</div>
+      <div class="stat-label">Citizens</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#e74c3c,#c0392b)">
+      <div class="stat-icon">🚛</div>
+      <div class="stat-value">{{ total_collectors }}</div>
+      <div class="stat-label">Collectors</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+
+  <!-- Status Doughnut -->
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-pie-chart text-success me-2"></i>Complaints by Status</div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="statusChart" style="max-height:280px"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Type Bar Chart -->
+  <div class="col-md-6 col-lg-8">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-bar-chart text-primary me-2"></i>Complaints by Issue Type</div>
+      <div class="card-body">
+        <canvas id="typeChart" style="max-height:280px"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Recent Complaints Table + Mini Map -->
+<div class="row g-4">
+
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock text-success me-2"></i>Recent Complaints</span>
+        <a href="{% url 'all_complaints' %}" class="btn btn-sm btn-outline-success">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-modern mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Issue</th>
+                <th>Reported By</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for complaint in recent_complaints %}
+              <tr>
+                <td><small class="text-muted">#{{ complaint.pk }}</small></td>
+                <td>
+                  <strong style="font-size:0.875rem">{{ complaint.title|truncatechars:35 }}</strong>
+                  <br><small class="text-muted">{{ complaint.get_issue_type_display }}</small>
+                </td>
+                <td><small>{{ complaint.reported_by.username }}</small></td>
+                <td><span class="badge status-{{ complaint.status }}">{{ complaint.get_status_display }}</span></td>
+                <td>
+                  <a href="{% url 'assign_complaint' complaint.pk %}"
+                     class="btn btn-xs btn-outline-success" style="font-size:0.75rem;padding:0.2rem 0.6rem">
+                    Manage
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini Map -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-geo-alt text-success me-2"></i>Waste Hotspots</span>
+        <a href="{% url 'hotspot_map' %}" class="btn btn-sm btn-outline-success">Full Map</a>
+      </div>
+      <div class="card-body p-0" style="min-height:300px">
+        <div id="map" style="height:100%;min-height:300px;border-radius:0 0 var(--radius) var(--radius)"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ---- Status Doughnut Chart ----
+const statusCtx = document.getElementById('statusChart');
+new Chart(statusCtx, {
+  type: 'doughnut',
+  data: {
+    labels: {{ status_labels|safe }},
+    datasets: [{
+      data: {{ status_data|safe }},
+      backgroundColor: ['#f39c12', '#3498db', '#2ecc71', '#e74c3c'],
+      borderWidth: 2,
+      borderColor: '#fff',
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
+    },
+    cutout: '65%'
+  }
+});
+
+// ---- Type Bar Chart ----
+const typeCtx = document.getElementById('typeChart');
+new Chart(typeCtx, {
+  type: 'bar',
+  data: {
+    labels: {{ type_labels|safe }},
+    datasets: [{
+      label: 'Complaints',
+      data: {{ type_data|safe }},
+      backgroundColor: [
+        'rgba(46,204,113,0.7)',
+        'rgba(52,152,219,0.7)',
+        'rgba(243,156,18,0.7)',
+        'rgba(231,76,60,0.7)',
+        'rgba(155,89,182,0.7)',
+      ],
+      borderRadius: 6,
+      borderWidth: 0,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { stepSize: 1 } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ---- Hotspot Mini Map ----
+function renderMiniMap() {
+  try {
+    const mapData = {{ map_data|safe }};
+    if (typeof initHotspotMap === 'function') {
+      initHotspotMap(mapData);
+    }
+  } catch(e) {}
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderMiniMap);
+} else {
+  renderMiniMap();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "collector_app/base_collector.html" %}
+{% block title %}Collector Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="page-header mb-4" style="background:linear-gradient(135deg,#1a1a2e,#f39c12,#e67e22);background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)">
+  <div class="row align-items-center">
+    <div class="col">
+      <h1 class="h3 mb-1">🚛 Hello, {{ request.user.get_full_name|default:request.user.username }}!</h1>
+      <p class="mb-0">
+        Today's date: <strong>{% now "l, d M Y" %}</strong>
+        {% if request.user.zone %} &nbsp;|&nbsp; Zone: <strong>{{ request.user.zone }}</strong>{% endif %}
+      </p>
+    </div>
+    <div class="col-auto">
+      <a href="{% url 'my_tasks' %}" class="btn btn-eco">
+        <i class="bi bi-list-task me-1"></i>View All Tasks
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-4 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-blue">
+      <div class="stat-icon">📋</div>
+      <div class="stat-value">{{ total_assigned }}</div>
+      <div class="stat-label">Total Assigned</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-orange">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-value">{{ pending_complaints }}</div>
+      <div class="stat-label">Active Complaints</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-green">
+      <div class="stat-icon">✅</div>
+      <div class="stat-value">{{ completed_today }}</div>
+      <div class="stat-label">Resolved</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-card-teal">
+      <div class="stat-icon">🚛</div>
+      <div class="stat-value">{{ pending_pickups }}</div>
+      <div class="stat-label">Pending Pickups</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- Active Complaints -->
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-triangle text-warning me-2"></i>Active Complaints</span>
+        <a href="{% url 'my_tasks' %}?type=complaint" class="btn btn-sm btn-outline-success">View All</a>
+      </div>
+      <div class="card-body p-0">
+        {% if recent_complaints %}
+        <div class="list-group list-group-flush">
+          {% for complaint in recent_complaints %}
+          <a href="{% url 'task_detail_complaint' complaint.pk %}"
+             class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-600" style="font-size:0.875rem">{{ complaint.title|truncatechars:45 }}</div>
+              <small class="text-muted">
+                <i class="bi bi-geo-alt me-1"></i>{{ complaint.location_address|truncatechars:40|default:"No location" }}
+              </small>
+            </div>
+            <span class="badge status-{{ complaint.status }} ms-2">{{ complaint.get_status_display }}</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+          <div style="font-size:2.5rem">🎉</div>
+          <p class="text-muted mt-2">No active complaints! Great work!</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's Pickups -->
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-calendar-check text-success me-2"></i>Today's Scheduled Pickups
+      </div>
+      <div class="card-body">
+        {% if todays_pickups %}
+          {% for pickup in todays_pickups %}
+          <a href="{% url 'task_detail_pickup' pickup.pk %}" class="text-decoration-none">
+            <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded"
+                 style="background:var(--light-2);border:1px solid var(--primary-light)">
+              <div>
+                <div class="fw-600" style="font-size:0.875rem">{{ pickup.get_waste_type_display }}</div>
+                <small class="text-muted">
+                  <i class="bi bi-clock me-1"></i>{{ pickup.preferred_time|time:"g:i A" }}
+                </small>
+                <br><small class="text-muted">
+                  <i class="bi bi-geo-alt me-1"></i>{{ pickup.address|truncatechars:35 }}
+                </small>
+              </div>
+              <span class="badge status-{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+            </div>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div class="text-center py-4">
+            <div style="font-size:2.5rem">📅</div>
+            <p class="text-muted mt-2 mb-0">No pickups scheduled for today</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
